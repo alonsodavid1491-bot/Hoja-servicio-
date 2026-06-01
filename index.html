@@ -147,7 +147,8 @@
     <div class="login-title">AyC ÓRDENES</div>
     <div class="login-sub">Servicio técnico y variedades AyC</div>
     <input class="login-input" type="password" id="passwordInput" placeholder="Contraseña" onkeypress="if(event.key==='Enter') login()">
-    <button class="login-btn" onclick="login()">ENTRAR</button>
+    <button class="login-btn" onclick="validarLogin()">INGRESAR</button>
+
   </div>
 </div>
 
@@ -711,6 +712,21 @@
   });
   toast('✅ Datos de empresa guardados','green');
 }</script>
+<script>
+  function validarLogin() {
+    // Obtener los valores de los inputs (asegúrate de que tengan IDs)
+    const user = document.getElementById('usuario').value; 
+    const pass = document.getElementById('password').value;
+
+    // Lógica simple de validación
+    if (user === "admin" && pass === "1234") {
+      document.getElementById('loginOverlay').style.display = 'none';
+      alert('¡Bienvenido!');
+    } else {
+      alert('Usuario o contraseña incorrectos');
+    }
+  }
+</script>
 
 </body>
 </html>
