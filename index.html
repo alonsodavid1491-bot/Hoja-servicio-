@@ -726,6 +726,24 @@
       alert('Usuario o contraseña incorrectos');
     }
   }
+<script>
+  function validarLogin() {
+    // 1. Obtenemos los valores
+    const user = document.getElementById('usuario').value;
+    const pass = document.getElementById('password').value;
+
+    // 2. Validación (Asegúrate de que 'admin' y '1234' sean tus claves)
+    if (user === "admin" && pass === "1234") {
+      // Ocultamos la capa del login usando el ID correcto
+      const overlay = document.getElementById('loginOverlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
+    } else {
+      alert('Usuario o contraseña incorrectos');
+    }
+  }
+</script>
 </script>
 
 </body>
