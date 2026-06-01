@@ -696,6 +696,21 @@
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
-</script>
+<div id="seccion-empresa" style="padding: 20px; border: 1px solid #ccc; margin: 20px 0;">
+  <h3>Datos de tu Empresa</h3>
+  <input type="text" id="nombre-emp" placeholder="Nombre de tu empresa">
+  <input type="text" id="tel-emp" placeholder="Teléfono">
+  <button onclick="guardarEmpresa()">Guardar Datos</button>
+</div>
+<script>function guardarEmpresa(){
+  cfg('empresa',{
+    nombre: document.getElementById('emp-nombre').value.trim(),
+    dir: document.getElementById('emp-dir').value.trim(),
+    tel: document.getElementById('emp-tel').value.trim(),
+    nit: document.getElementById('emp-nit').value.trim()
+  });
+  toast('✅ Datos de empresa guardados','green');
+}</script>
+
 </body>
 </html>
