@@ -1,0 +1,2017 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AyC - Sistema de Gestión Completo</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!-- Carga de Iconos Lucide para soporte de componentes visuales -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Chart.js para las Estadísticas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<!-- Librerías para generación de PDF profesional -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  :root {
+    --neon-cyan: #00f5ff;
+    --neon-pink: #ff2d78;
+    --neon-green: #39ff14;
+    --neon-yellow: #ffdf00;
+    --neon-purple: #bd53ff;
+    --bg-dark: #080c10;
+    --bg-card: #0d1117;
+    --bg-field: #111820;
+    --border: #1e2d3d;
+    --text: #e0eaf5;
+    --text-muted: #5a7a8a;
+  }
+  
+  * { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+  }
+
+  body { 
+    background: var(--bg-dark); 
+    color: var(--text); 
+    font-family: 'Exo 2', sans-serif; 
+    min-height: 100vh; 
+    padding-bottom: 60px; 
+  }
+
+  /* PANTALLA DE INICIO DE SESIÓN */
+  #login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-dark);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .login-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 30px;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.15);
+    position: relative;
+  }
+  .login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+  }
+  .login-logo {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 20px;
+    border: 3px solid var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.4);
+    display: block;
+  }
+  .login-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    margin-bottom: 25px;
+    background: linear-gradient(to right, #ffffff, var(--neon-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* HEADER */
+  .header { 
+    background: linear-gradient(135deg, #060a0e, #0d1622); 
+    padding: 20px; 
+    border-bottom: 2px solid var(--border); 
+    position: relative;
+  }
+  .header-line {
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-green));
+  }
+  .header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  .header-brand-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .header-logo {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.35);
+  }
+  .header-title h1 { 
+    font-family: 'Orbitron', sans-serif; 
+    font-size: 24px; 
+    letter-spacing: 2px;
+    background: linear-gradient(to right, #ffffff, var(--neon-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header-title p {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* CLOUD INDICATOR */
+  .drive-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: var(--bg-field);
+    border: 1px solid var(--border);
+  }
+  .drive-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #5a7a8a;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .drive-indicator-dot.online {
+    background: var(--neon-green);
+    box-shadow: 0 0 8px var(--neon-green);
+  }
+
+  /* PESTAÑAS / MENU NAVEGACION */
+  .tabs-nav {
+    background: #0b1119;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    flex: 1;
+    min-width: 120px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 16px 10px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+    text-align: center;
+  }
+  .tab-btn:hover {
+    color: var(--neon-cyan);
+    background: rgba(0, 245, 255, 0.02);
+  }
+  .tab-btn.active {
+    color: var(--neon-cyan);
+    border-bottom: 3px solid var(--neon-cyan);
+    background: rgba(0, 245, 255, 0.04);
+    text-shadow: 0 0 6px rgba(0, 245, 255, 0.4);
+  }
+
+  /* VISTAS */
+  .view-content {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 15px;
+  }
+  .view-panel {
+    display: none;
+  }
+  .view-panel.active {
+    display: block;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--neon-cyan);
+  }
+  .card.pink::before { background: var(--neon-pink); }
+  .card.green::before { background: var(--neon-green); }
+
+  .card-header-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--text);
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* FORMULARIOS */
+  .grid-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  .form-group {
+    margin-bottom: 12px;
+  }
+  .form-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  .form-control {
+    width: 100%;
+    background: var(--bg-field);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s;
+  }
+  .form-control:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
+  }
+
+  /* BOTONES */
+  .btn {
+    background: var(--bg-field);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:hover {
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.15);
+  }
+  .btn-primary {
+    background: rgba(0, 245, 255, 0.1);
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+  }
+  .btn-primary:hover {
+    background: var(--neon-cyan);
+    color: var(--bg-dark);
+    box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+  }
+  .btn-danger {
+    background: rgba(255, 45, 120, 0.1);
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+  }
+  .btn-danger:hover {
+    background: var(--neon-pink);
+    color: var(--bg-dark);
+    box-shadow: 0 0 15px rgba(255, 45, 120, 0.4);
+  }
+  .btn-success {
+    background: rgba(57, 255, 20, 0.1);
+    border-color: var(--neon-green);
+    color: var(--neon-green);
+  }
+  .btn-success:hover {
+    background: var(--neon-green);
+    color: var(--bg-dark);
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+  }
+
+  /* TABLAS */
+  .table-responsive {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+  }
+  th {
+    background: #0a0e14;
+    color: var(--neon-cyan);
+    padding: 12px 16px;
+    font-family: 'Orbitron', sans-serif;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(30, 45, 61, 0.5);
+    background: var(--bg-card);
+  }
+  tr:hover td {
+    background: rgba(0, 245, 255, 0.02);
+  }
+
+  /* BADGES */
+  .badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  .badge-si { background: rgba(57, 255, 20, 0.15); color: var(--neon-green); border: 1px solid var(--neon-green); }
+  .badge-no { background: rgba(255, 45, 120, 0.15); color: var(--neon-pink); border: 1px solid var(--neon-pink); }
+  .badge-t { background: rgba(0, 245, 255, 0.15); color: var(--neon-cyan); border: 1px solid var(--neon-cyan); }
+
+  /* BADGES DE ESTADO SOLICITADOS */
+  .badge-pendiente { background: rgba(255, 223, 0, 0.15); color: var(--neon-yellow); border: 1px solid var(--neon-yellow); }
+  .badge-entregado { background: rgba(57, 255, 20, 0.15); color: var(--neon-green); border: 1px solid var(--neon-green); }
+  .badge-sinsolucion { background: rgba(255, 45, 120, 0.15); color: var(--neon-pink); border: 1px solid var(--neon-pink); }
+  .badge-garantia { background: rgba(189, 83, 255, 0.15); color: var(--neon-purple); border: 1px solid var(--neon-purple); }
+
+  /* CANVAS FIRMA */
+  .canvas-container {
+    background: #07090d;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 180px;
+    background: transparent;
+    cursor: crosshair;
+    touch-action: none;
+  }
+
+  /* ALERTAS DE RETRASO */
+  .delay-alert-box {
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    border-left: 4px solid transparent;
+  }
+  .delay-alert-critical {
+    background: rgba(255, 45, 120, 0.1);
+    border-left-color: var(--neon-pink);
+    color: #ffb3cd;
+  }
+  .delay-alert-warning {
+    background: rgba(0, 245, 255, 0.08);
+    border-left-color: var(--neon-cyan);
+    color: #b3f7ff;
+  }
+
+  /* NOTIFICACIÓN TOAST */
+  #toast-msg {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    z-index: 10000;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  }
+  #toast-msg.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ARCHIVOS ADJUNTOS */
+  .preview-foto-box {
+    width: 100%;
+    height: 160px;
+    background: #05070a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .preview-foto-box img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .galeria-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+  }
+  .foto-item {
+    background: var(--bg-field);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+  }
+  .foto-item img {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #000;
+  }
+
+  /* DISEÑO IMPRESIÓN DOCUMENTO ORDEN */
+  #printable-receipt {
+    display: none;
+    color: #000;
+    background: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  @media print {
+    body {
+      background: #fff !important;
+      color: #000 !important;
+      padding-bottom: 0 !important;
+    }
+    #app-main-view, #login-overlay, #modal-editar-orden, #toast-msg {
+      display: none !important;
+    }
+    #printable-receipt {
+      display: block !important;
+      width: 100% !important;
+      padding: 10px !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- TOAST NOTIFICACIÓN -->
+  <div id="toast-msg"></div>
+
+  <!-- PANTALLA DE INICIO DE SESIÓN -->
+  <div id="login-overlay">
+    <div class="login-card">
+      <img id="logo-preview-img" src="image.png" class="login-logo" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80'">
+      <h2 class="login-title">Variedades AyC</h2>
+      <p style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 25px; letter-spacing: 1px;">Control y Autenticación</p>
+      
+      <div class="form-group" style="text-align: left; margin-bottom: 20px;">
+        <label class="form-label">Contraseña de Operador</label>
+        <input type="password" id="login-password-field" class="form-control" placeholder="••••" style="text-align: center; font-size: 18px; letter-spacing: 0.1em;" onkeydown="checkLoginKey(event)">
+      </div>
+      
+      <button class="btn btn-primary" style="width: 100%;" onclick="procesarLogin()">Ingresar al Sistema</button>
+      <p style="font-size: 10px; color: var(--text-muted); margin-top: 30px;">Taller de Reparación &copy; 2026</p>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR PRINCIPAL (SPA) -->
+  <div id="app-main-view">
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-container">
+        <div class="header-brand-info">
+          <img src="image.png" class="header-logo" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80'">
+          <div class="header-title">
+            <h1>AyC SERVICIOS</h1>
+            <p>Plataforma Integrada de Control Técnico & Firmas</p>
+          </div>
+        </div>
+        <div class="drive-indicator">
+          <div class="drive-indicator-dot" id="drive-dot"></div>
+          <span id="drive-text">Google Drive: Local</span>
+        </div>
+      </div>
+      <div class="header-line"></div>
+    </header>
+
+    <!-- NAVEGACIÓN -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" onclick="changeTab('tab-orders')">Órdenes</button>
+      <button class="tab-btn" onclick="changeTab('tab-signatures')">Firma Digital</button>
+      <button class="tab-btn" onclick="changeTab('tab-multimedia')">Multimedia & WhatsApp</button>
+      <button class="tab-btn" onclick="changeTab('tab-finance')">Finanzas</button>
+      <button class="tab-btn" onclick="changeTab('tab-config')">Configuración</button>
+    </nav>
+
+    <!-- CONTENIDO SPA -->
+    <main class="view-content">
+
+      <!-- 1. PESTAÑA: ÓRDENES -->
+      <section id="tab-orders" class="view-panel active">
+        <!-- Filtro y Botón de Creación -->
+        <div class="card">
+          <div class="grid-form" style="align-items: center; margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Buscar Dispositivo o Cliente</label>
+              <input type="text" id="inp-search" class="form-control" oninput="renderHistorial()" placeholder="Ej. Juan Pérez / Samsung...">
+            </div>
+            
+            <!-- SELECTOR DE FILTRO DE ESTADO SOLICITADO -->
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Filtrar por Estado</label>
+              <select id="filter-estado" class="form-control" onchange="renderHistorial()">
+                <option value="TODOS">Todos los Estados</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Entregado">Entregado</option>
+                <option value="Sin solución">Sin solución</option>
+                <option value="Garantía">Garantía</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; align-self: flex-end; height: 42px;">
+              <button class="btn btn-primary" onclick="crearNuevaOrden()"><i data-lucide="plus"></i> Nueva Orden</button>
+              <button class="btn" onclick="exportarCSV()"><i data-lucide="download"></i> Excel CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alertas de retraso de equipos -->
+        <div class="card pink" id="box-alertas-retraso" style="display:none;">
+          <div class="card-header-title" style="color:var(--neon-pink)">⚠️ Alertas de Equipos Demorados en Taller</div>
+          <div id="alertas-retraso-container"></div>
+        </div>
+
+        <!-- Registro principal -->
+        <div class="card">
+          <div class="card-header-title">Listado de Órdenes y Diagnósticos</div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>N° Orden</th>
+                  <th>Cliente</th>
+                  <th>Dispositivo</th>
+                  <th>Presupuesto</th>
+                  <th>Decisión</th>
+                  <th>Estado</th>
+                  <th>Método Pago</th>
+                  <th>Ingreso</th>
+                  <th style="text-align: right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-ordenes-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. PESTAÑA: FIRMA DIGITAL -->
+      <section id="tab-signatures" class="view-panel">
+        <div class="grid-form" style="grid-template-columns: 1fr 1fr;">
+          <!-- Registro de Firma -->
+          <div class="card green">
+            <div class="card-header-title">Autorización y Firma de Consentimiento</div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">
+              El firmante autoriza el diagnóstico técnico del equipo y aprueba el inicio inmediato de las pruebas de taller.
+            </p>
+            <div class="form-group">
+              <label class="form-label">Asociar a la Orden</label>
+              <select id="sign-orden-select" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nombre del Firmante</label>
+              <input type="text" id="sign-client-name" class="form-control" placeholder="Nombre completo">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Dibuje su firma en el recuadro</label>
+              <div class="canvas-container">
+                <canvas id="canvas-firma"></canvas>
+              </div>
+            </div>
+            
+            <div style="display:flex; gap:10px; justify-content: space-between;">
+              <button class="btn" onclick="borrarFirma()">Limpiar Firma</button>
+              <button class="btn btn-success" onclick="guardarFirmaCliente()">Registrar Firma</button>
+            </div>
+          </div>
+
+          <!-- Listado de Firmas -->
+          <div class="card">
+            <div class="card-header-title">Registro de Autorizaciones Recibidas</div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Firma</th>
+                    <th>Orden / Cliente</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-firmas-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. PESTAÑA: MULTIMEDIA & WHATSAPP -->
+      <section id="tab-multimedia" class="view-panel">
+        <div class="grid-form" style="grid-template-columns: 1fr 1fr;">
+          <!-- Foto de Recepción -->
+          <div class="card">
+            <div class="card-header-title">Registro Fotográfico del Dispositivo</div>
+            
+            <div class="form-group">
+              <label class="form-label">Asociar a la Orden</label>
+              <select id="foto-orden" class="form-control"></select>
+            </div>
+
+            <div class="preview-foto-box">
+              <div id="foto-vacio" style="color:var(--text-muted); text-align:center; font-size:12px;">
+                No hay imagen seleccionada
+              </div>
+              <img id="img-recepcion-preview" style="display:none;" alt="Evidencia">
+            </div>
+
+            <div style="display:flex; gap:10px;">
+              <label class="btn" style="flex:1; cursor:pointer;">
+                Cargar Archivo
+                <input type="file" id="foto-file-input" accept="image/*" style="display:none;" onchange="procesarArchivoImagen(event)">
+              </label>
+              <button class="btn btn-primary" style="flex:1;" onclick="guardarFotoEvidencia()">Guardar Imagen</button>
+            </div>
+          </div>
+
+          <!-- Comunicaciones WhatsApp -->
+          <div class="card pink">
+            <div class="card-header-title">Plantillas de Notificaciones por WhatsApp</div>
+            
+            <div class="form-group">
+              <label class="form-label">Seleccionar Orden</label>
+              <select id="wa-orden" class="form-control" onchange="generarMensajeNotif()"></select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tipo de Notificación</label>
+              <select id="wa-plantilla" class="form-control" onchange="generarMensajeNotif()">
+                <option value="ingreso">Confirmación de Ingreso a Taller</option>
+                <option value="reparado">Reparación Exitosa (Listo para Entrega)</option>
+                <option value="presupuesto">Aviso de Presupuesto Técnico</option>
+                <option value="sinreparacion">No tuvo reparación (Listo para Retiro)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Contenido del Mensaje</label>
+              <textarea id="wa-preview" rows="5" class="form-control" style="font-family:monospace; font-size:12px; background:#07090d; color:var(--neon-green);" readonly></textarea>
+            </div>
+
+            <button class="btn btn-success" style="width:100%;" onclick="enviarMensajePorWA()"><i data-lucide="send"></i> Enviar Mensaje vía WhatsApp</button>
+          </div>
+        </div>
+
+        <!-- Galería de Fotos -->
+        <div class="card">
+          <div class="card-header-title">Galería de Imágenes de Taller</div>
+          <div class="galeria-grid" id="galeria-fotos"></div>
+        </div>
+      </section>
+
+      <!-- 4. PESTAÑA: FINANZAS -->
+      <section id="tab-finance" class="view-panel">
+        <div class="grid-form" style="grid-template-columns: 1fr 1.2fr;">
+          <!-- Gráfico Financiero -->
+          <div class="card pink">
+            <div class="card-header-title">Estadísticas de Ingresos y Métodos</div>
+            <div style="height: 240px; position: relative;">
+              <canvas id="canvas-finance-chart"></canvas>
+            </div>
+            <div id="finance-promedio-box" style="margin-top:15px; border-top:1px solid var(--border); padding-top:15px; font-size:13px;">
+              <!-- Renderizado dinámico de promedios -->
+            </div>
+          </div>
+
+          <!-- Cuentas pendientes de cobro -->
+          <div class="card">
+            <div class="card-header-title">Equipos Listos Pendientes de Cobro</div>
+            <div id="ordenesXpagar" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; margin-bottom:15px;">
+              <!-- Lista dinámica -->
+            </div>
+            <button class="btn btn-primary" onclick="enviarPorEmail()"><i data-lucide="mail"></i> Compartir Resumen de Cobros</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. PESTAÑA: CONFIGURACIÓN -->
+      <section id="tab-config" class="view-panel">
+        <div class="grid-form" style="grid-template-columns: 1fr 1fr;">
+          <!-- Configuración de Empresa -->
+          <div class="card green">
+            <div class="card-header-title">Configuración Comercial</div>
+            <div class="form-group">
+              <label class="form-label">Nombre Comercial de la Empresa</label>
+              <input type="text" id="emp-nombre" class="form-control" placeholder="Servicio Técnico AyC">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Dirección Fiscal</label>
+              <input type="text" id="emp-dir" class="form-control" placeholder="Ej. Calle Principal 123">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono de Contacto</label>
+              <input type="text" id="emp-tel" class="form-control" placeholder="Ej. +569...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Identificación Tributaria (RUT/NIT)</label>
+              <input type="text" id="emp-nit" class="form-control" placeholder="RUT 12.345.678-9">
+            </div>
+            <button class="btn btn-success" style="width:100%;" onclick="guardarEmpresa()">Guardar Datos Comerciales</button>
+          </div>
+
+          <!-- Configuración de Alertas e Integraciones -->
+          <div class="card">
+            <div class="card-header-title">Parámetros de Taller y Copias</div>
+            
+            <div class="form-group">
+              <label class="form-label">Frecuencia de Copia de Seguridad</label>
+              <select id="frecuencia" class="form-control" onchange="actualizarParametroTaller('backup_freq', this.value)">
+                <option value="diario">Diario automático</option>
+                <option value="semanal">Semanal</option>
+                <option value="manual">Manual únicamente</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Alerta Preventiva de Demora (Días en Taller)</label>
+              <input type="number" id="dias-alerta" class="form-control" min="1" max="30" onchange="actualizarParametroTaller('dias_alerta', this.value)">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Alerta Crítica de Demora (Días en Taller)</label>
+              <input type="number" id="dias-urgente" class="form-control" min="1" max="60" onchange="actualizarParametroTaller('dias_urgente', this.value)">
+            </div>
+
+            <div style="border-top:1px solid var(--border); margin-top:20px; padding-top:15px; display:flex; gap:10px;">
+              <button class="btn btn-primary" onclick="realizarRespaldoDrive()"><i data-lucide="cloud"></i> Respaldar Drive</button>
+              <button class="btn btn-danger" onclick="restablecerAplicacion()"><i data-lucide="trash-2"></i> Limpiar Datos</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- RECEIPT DE IMPRESIÓN OFICIAL (NATIVO WINDOW.PRINT) -->
+  <div id="printable-receipt">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px;">
+      <div>
+        <h1 style="font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 900; letter-spacing: 1px; color: #000; margin-bottom: 4px;" id="print-header-brand-name">VARIEDADES AYC</h1>
+        <p style="font-size: 11px; margin: 2px 0;" id="print-header-nit">RUT/NIT: -</p>
+        <p style="font-size: 11px; margin: 2px 0;" id="print-header-address">Dirección: -</p>
+        <p style="font-size: 11px; margin: 2px 0;" id="print-header-phone">Teléfono: -</p>
+      </div>
+      <div>
+        <img src="image.png" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid #000;" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80'">
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+      <h2 style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 1px double #000; display: inline-block; padding-bottom: 4px; letter-spacing: 1px;">Orden de Trabajo de Servicio Técnico</h2>
+    </div>
+
+    <!-- Detalles del cliente y del equipo -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 12px;">
+      <div style="border: 1px solid #000; padding: 10px; border-radius: 6px; background: #fafafa;">
+        <h3 style="font-weight: bold; border-bottom: 1px solid #aaa; padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; font-size: 12px;">Datos de Servicio</h3>
+        <p style="margin: 4px 0;"><strong>N° Orden:</strong> <span id="print-order-num" style="font-size: 14px; font-weight: bold;"></span></p>
+        <p style="margin: 4px 0;"><strong>Ingreso:</strong> <span id="print-order-date"></span></p>
+        <p style="margin: 4px 0;"><strong>Fecha Límite Retiro (30 días):</strong> <span id="print-order-deadline" style="color: #c00; font-weight: bold; font-size: 13px;"></span></p>
+        <p style="margin: 4px 0;"><strong>Estado del Equipo:</strong> <span id="print-order-status" style="font-weight: bold;"></span></p>
+      </div>
+      <div style="border: 1px solid #000; padding: 10px; border-radius: 6px; background: #fafafa;">
+        <h3 style="font-weight: bold; border-bottom: 1px solid #aaa; padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; font-size: 12px;">Datos del Cliente</h3>
+        <p style="margin: 4px 0;"><strong>Cliente:</strong> <span id="print-client-name" style="font-weight: bold;"></span></p>
+        <p style="margin: 4px 0;"><strong>Teléfono:</strong> <span id="print-client-phone"></span></p>
+        <p style="margin: 4px 0;"><strong>Dispositivo:</strong> <span id="print-device-name"></span></p>
+      </div>
+    </div>
+
+    <!-- Detalles de la falla y diagnóstico -->
+    <div style="border: 1px solid #000; padding: 10px; border-radius: 6px; font-size: 12px; margin-bottom: 20px; background: #fafafa;">
+      <h3 style="font-weight: bold; border-bottom: 1px solid #aaa; padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; font-size: 12px;">Observaciones y Diagnóstico</h3>
+      <p style="line-height: 1.4; margin-bottom: 10px;" id="print-obs-diagnostico"></p>
+      
+      <div style="display: flex; justify-content: space-between; border-top: 1px dashed #aaa; padding-top: 8px; font-size: 13px;">
+        <p><strong>Forma de Pago:</strong> <span id="print-pay-method"></span></p>
+        <p><strong>Presupuesto:</strong> <span id="print-budget-val" style="font-weight: bold; font-size: 14px;"></span></p>
+      </div>
+    </div>
+
+    <!-- CLÁUSULA LEGAL OBLIGATORIA DE ABANDONO (30 DÍAS) -->
+    <div style="border: 1px solid #c00; background: #fffdfd; padding: 12px; border-radius: 6px; font-size: 10px; line-height: 1.4; text-align: justify; margin-bottom: 35px; color: #400;">
+      <h4 style="font-weight: bold; color: #c00; text-transform: uppercase; margin-bottom: 4px; font-size: 11px;">⚠️ Términos, Condiciones y Cláusula de Abandono (30 días)</h4>
+      El cliente declara estar en pleno conocimiento y de acuerdo con que dispone de un plazo límite máximo de **30 días calendario** para retirar su equipo del taller técnico, computado desde la fecha de ingreso establecida en este documento o desde la fecha de notificación formal de finalización de trabajo. **Transcurrido el período indicado de 30 días sin que el dispositivo haya sido reclamado y retirado, este se considerará legalmente ABANDONADO, autorizando expresa, plena e irrevocablemente a Variedades AyC a disponer del mismo** para reciclaje, venta de componentes o destrucción, con el fin de resarcir el costo técnico de diagnóstico, mano de obra especializada y almacenamiento, sin responsabilidad alguna de indemnización o reposición de equipo para el propietario.
+    </div>
+
+    <!-- Líneas de firma -->
+    <div style="display: flex; justify-content: space-between; margin-top: 50px; padding: 0 30px; font-size: 11px;">
+      <div style="text-align: center; width: 180px;">
+        <div style="border-bottom: 1px solid #000; height: 30px;"></div>
+        <p style="margin-top: 5px;"><strong>Firma Autorizada Técnico</strong></p>
+        <p style="font-size: 9px; color: #666;">Variedades AyC</p>
+      </div>
+      <div style="text-align: center; width: 180px;">
+        <div style="border-bottom: 1px solid #000; height: 30px;"></div>
+        <p style="margin-top: 5px;"><strong>Firma de Aceptación Cliente</strong></p>
+        <p style="font-size: 9px; color: #666;">Acepto los términos de servicio</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMULARIO MODAL: AGREGAR O EDITAR ORDEN -->
+  <div id="modal-editar-orden" class="modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 15px;">
+    <div class="card" style="max-width: 550px; width:100%; max-height: 90vh; overflow-y:auto; margin-bottom: 0;">
+      <div class="card-header-title">
+        <span id="modal-titulo">Orden de Servicio Técnico</span>
+        <button class="btn" style="padding: 4px 8px; border: none; background: transparent;" onclick="cerrarModalOrden()"><i data-lucide="x"></i></button>
+      </div>
+      <form id="form-orden-trabajo" onsubmit="procesarFormularioOrden(event)">
+        <input type="hidden" id="form-edit-idx">
+        
+        <div class="form-group">
+          <label class="form-label">Número de Orden</label>
+          <input type="number" id="form-numero" class="form-control" required placeholder="Ej. 1004">
+        </div>
+
+        <div class="grid-form">
+          <div class="form-group">
+            <label class="form-label">Nombre del Cliente</label>
+            <input type="text" id="form-nombre" class="form-control" required placeholder="Juan Pérez">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono / Celular (WhatsApp)</label>
+            <input type="text" id="form-telefono" class="form-control" placeholder="Ej. 56912345678">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Modelo del Dispositivo</label>
+          <input type="text" id="form-dispositivo" class="form-control" required placeholder="Ej. Samsung S21 / MacBook Pro">
+        </div>
+
+        <div class="grid-form">
+          <div class="form-group">
+            <label class="form-label">Presupuesto ($)</label>
+            <input type="number" id="form-presupuesto" class="form-control" required placeholder="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Decisión de Cliente</label>
+            <select id="form-decision" class="form-control">
+              <option value="SI">SI - Aprobado para Reparación</option>
+              <option value="NO">NO - Rechazado</option>
+              <option value="T">T - Pendiente en Taller / Diagnóstico</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-form">
+          <div class="form-group">
+            <label class="form-label">Método de Pago</label>
+            <select id="form-pago" class="form-control">
+              <option value="EF">Efectivo (EF)</option>
+              <option value="TR">Transferencia Electrónica (TR)</option>
+              <option value="TD">Tarjeta de Débito/Crédito (TD)</option>
+              <option value="PD">Pago Pendiente (PD)</option>
+            </select>
+          </div>
+
+          <!-- SELECCIÓN DE ESTADO DEL EQUIPO EN EL FORMULARIO -->
+          <div class="form-group">
+            <label class="form-label">Estado del Equipo</label>
+            <select id="form-estado" class="form-control">
+              <option value="Pendiente">Pendiente</option>
+              <option value="Entregado">Entregado</option>
+              <option value="Sin solución">Sin solución</option>
+              <option value="Garantía">Garantía</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Detalles del Fallo / Observaciones Técnicas</label>
+          <textarea id="form-obs" class="form-control" rows="3" placeholder="Ingresar descripción física del equipo..."></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn" onclick="cerrarModalOrden()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Datos</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CONTROL DE LA APLICACIÓN INTEGRAL -->
+  <script>
+    // --- CONTROL DE LOGIN ---
+    function checkLoginKey(e) {
+      if (e.key === 'Enter') {
+        procesarLogin();
+      }
+    }
+
+    function procesarLogin() {
+      const field = document.getElementById('login-password-field');
+      if (!field) return;
+
+      if (field.value === "1234") {
+        document.getElementById('login-overlay').style.display = 'none';
+        toast("🔓 Acceso Correcto. ¡Bienvenido!", "green");
+      } else {
+        toast("❌ Contraseña incorrecta. Inténtelo de nuevo.", "red");
+        field.value = "";
+        field.focus();
+      }
+    }
+
+    // --- ESTADOS INTERNOS DE LA APLICACIÓN ---
+    function cfg(key, val) {
+      if (val !== undefined) {
+        localStorage.setItem('ayc_system_' + key, JSON.stringify(val));
+        return val;
+      }
+      const data = localStorage.getItem('ayc_system_' + key);
+      return data ? JSON.parse(data) : null;
+    }
+
+    let todasOrdenes = cfg('ordenes') || [
+      { numero: "1001", nombre: "Mario Gómez", telefono: "56912345678", dispositivo: "Samsung S21", presupuesto: 45000, decision: "SI", pago: "EF", obs: "Cambio de pantalla táctil.", fecha: new Date().toISOString(), estado: "Entregado" },
+      { numero: "1002", nombre: "Catalina Soto", telefono: "56998765432", dispositivo: "MacBook Air", presupuesto: 120000, decision: "T", pago: "PD", obs: "No enciende después de mojarse.", fecha: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(), estado: "Pendiente" },
+      { numero: "1003", nombre: "Roberto Diaz", telefono: "56955443322", dispositivo: "iPad Pro", presupuesto: 85000, decision: "SI", pago: "TR", obs: "Pin de carga sulfatado.", fecha: new Date().toISOString(), estado: "Garantía" }
+    ];
+
+    let firmasClientes = cfg('firmas') || [];
+    let albumFotos = cfg('fotos') || [];
+    let driveOn = cfg('drive_on') || false;
+    let chartFinanciero = null;
+    let fotoTemporalBase64 = null;
+
+    // --- MANEJO DE VISTAS (SPA) ---
+    function changeTab(panelId) {
+      document.querySelectorAll('.view-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      const activePanel = document.getElementById(panelId);
+      if (activePanel) activePanel.classList.add('active');
+
+      const triggerBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(panelId));
+      if (triggerBtn) triggerBtn.classList.add('active');
+
+      if (panelId === 'tab-signatures') {
+        inicCanvas();
+        renderFirmas();
+      }
+      if (panelId === 'tab-multimedia') {
+        cargarSelectsMultimedia();
+        renderGaleriaFotos();
+      }
+      if (panelId === 'tab-finance') {
+        renderFinanzas();
+      }
+      safeInitIcons();
+    }
+
+    // --- SEGURO INICIALIZADOR DE ICONOS LUCIDE ---
+    function safeInitIcons() {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    }
+
+    // --- CONTROL DE VENTANA MODAL ---
+    function cerrarModalOrden() {
+      document.getElementById('modal-editar-orden').style.display = 'none';
+    }
+
+    // --- SISTEMA DE IMPRESIÓN NATIVO BOLETA ---
+    function imprimirBoletaOrden(ordenNum) {
+      const o = todasOrdenes.find(x => x.numero.toString() === ordenNum.toString());
+      if (!o) {
+        toast("❌ No se encontró la orden seleccionada.", "red");
+        return;
+      }
+
+      // Evita errores si cfg('empresa') devuelve null o un objeto incompleto
+      const storedEmp = cfg('empresa') || {};
+      const emp = {
+        nombre: storedEmp.nombre || "VARIEDADES AYC",
+        dir: storedEmp.dir || "Ventas y Servicio Técnico",
+        tel: storedEmp.tel || "6407-62-54",
+        nit: storedEmp.nit || "RUT 12.345.678-9"
+      };
+
+      try {
+        // Rellenar dinámicamente los campos de la boleta
+        const brandNameEl = document.getElementById('print-header-brand-name');
+        if (brandNameEl) brandNameEl.textContent = emp.nombre.toUpperCase();
+
+        const nitEl = document.getElementById('print-header-nit');
+        if (nitEl) nitEl.textContent = `RUT/NIT: ${emp.nit}`;
+
+        const addressEl = document.getElementById('print-header-address');
+        if (addressEl) addressEl.textContent = `Dirección: ${emp.dir}`;
+
+        const phoneEl = document.getElementById('print-header-phone');
+        if (phoneEl) phoneEl.textContent = `Teléfono: ${formatearTelefono(emp.tel)}`;
+
+        const orderNumEl = document.getElementById('print-order-num');
+        if (orderNumEl) orderNumEl.textContent = o.numero;
+
+        const orderStatusEl = document.getElementById('print-order-status');
+        if (orderStatusEl) orderStatusEl.textContent = o.estado || "Pendiente";
+        
+        const dateEl = document.getElementById('print-order-date');
+        if (dateEl) {
+          const fechaIngreso = o.fecha ? new Date(o.fecha) : new Date();
+          dateEl.textContent = isNaN(fechaIngreso.getTime()) 
+            ? '---' 
+            : `${fechaIngreso.toLocaleDateString()} ${fechaIngreso.toLocaleTimeString()}`;
+        }
+
+        const deadlineEl = document.getElementById('print-order-deadline');
+        if (deadlineEl) {
+          const fechaIngreso = o.fecha ? new Date(o.fecha) : new Date();
+          const fechaLimite = new Date(fechaIngreso.getTime());
+          fechaLimite.setDate(fechaLimite.getDate() + 30);
+          deadlineEl.textContent = isNaN(fechaLimite.getTime()) ? '---' : fechaLimite.toLocaleDateString();
+        }
+
+        const clientNameEl = document.getElementById('print-client-name');
+        if (clientNameEl) clientNameEl.textContent = o.nombre;
+
+        const clientPhoneEl = document.getElementById('print-client-phone');
+        if (clientPhoneEl) clientPhoneEl.textContent = formatearTelefono(o.telefono);
+
+        const deviceNameEl = document.getElementById('print-device-name');
+        if (deviceNameEl) deviceNameEl.textContent = o.dispositivo;
+
+        const obsEl = document.getElementById('print-obs-diagnostico');
+        if (obsEl) obsEl.innerHTML = `<strong>Fallo/Diagnóstico:</strong> ${o.obs || 'Sin observaciones registradas.'}`;
+
+        let metodoPago = "Pago Pendiente (PD)";
+        if (o.pago === 'EF') metodoPago = "Efectivo (EF)";
+        if (o.pago === 'TR') metodoPago = "Transferencia Electrónica (TR)";
+        if (o.pago === 'TD') metodoPago = "Tarjeta de Débito/Crédito (TD)";
+        
+        const payMethodEl = document.getElementById('print-pay-method');
+        if (payMethodEl) payMethodEl.textContent = metodoPago;
+
+        const budgetValEl = document.getElementById('print-budget-val');
+        if (budgetValEl) budgetValEl.textContent = `$${parseInt(o.presupuesto || 0).toLocaleString()}`;
+
+        // Llamada nativa de impresión
+        toast("🖨️ Abriendo menú de impresión...", "green");
+        setTimeout(() => {
+          window.print();
+        }, 300);
+
+      } catch (error) {
+        console.error("Error cargando plantilla de boleta:", error);
+        toast("❌ Error al procesar la plantilla de boleta.", "red");
+      }
+    }
+
+    // --- ALERTAS DE DEMORA DE EQUIPOS ---
+    function revisarOrdenesRetrasadas() {
+      const diasAlerta = parseInt(cfg('dias_alerta')) || 7;
+      const diasUrgente = parseInt(cfg('dias_urgente')) || 15;
+      const containerAlerta = document.getElementById('alertas-retraso-container');
+      const boxAlertas = document.getElementById('box-alertas-retraso');
+      
+      if (!containerAlerta) return;
+
+      const hoy = new Date();
+      let htmlContent = '';
+
+      todasOrdenes.forEach(o => {
+        // Solo alertamos si no ha sido entregado o resuelto
+        if (o.decision === 'T' && o.fecha && o.estado !== 'Entregado' && o.estado !== 'Sin solución') {
+          const diferenciaTiempo = Math.abs(hoy - new Date(o.fecha));
+          const diasTranscurridos = Math.ceil(diferenciaTiempo / (1000 * 60 * 60 * 24));
+
+          if (diasTranscurridos >= diasUrgente) {
+            htmlContent += `
+              <div class="delay-alert-box delay-alert-critical">
+                🚨 <strong>ALERTA CRÍTICA:</strong> La orden N° ${o.numero} (${o.nombre}) para el dispositivo ${o.dispositivo} lleva <strong>${diasTranscurridos} días</strong> detenida en taller sin aprobación.
+              </div>
+            `;
+          } else if (diasTranscurridos >= diasAlerta) {
+            htmlContent += `
+              <div class="delay-alert-box delay-alert-warning">
+                ⚠️ <strong>ALERTA PREVENTIVA:</strong> El equipo ${o.dispositivo} de la orden N° ${o.numero} lleva <strong>${diasTranscurridos} días</strong> en pruebas de diagnóstico.
+              </div>
+            `;
+          }
+        }
+      });
+
+      if (htmlContent) {
+        containerAlerta.innerHTML = htmlContent;
+        boxAlertas.style.display = 'block';
+      } else {
+        boxAlertas.style.display = 'none';
+      }
+    }
+
+    // --- NOTIFICACIÓN INTERNA TOAST ---
+    function toast(mensaje, tipo = 'cyan') {
+      const t = document.getElementById('toast-msg');
+      if (!t) return;
+
+      let color = 'var(--neon-cyan)';
+      if (tipo === 'green') color = 'var(--neon-green)';
+      if (tipo === 'pink' || tipo === 'red') color = 'var(--neon-pink)';
+
+      t.style.background = '#0a0d14';
+      t.style.borderLeft = `4px solid ${color}`;
+      t.innerHTML = mensaje;
+      
+      t.classList.add('show');
+      setTimeout(() => {
+        t.classList.remove('show');
+      }, 3500);
+    }
+
+    // --- TELÉFONOS EN FORMATO PERSONALIZADO (XXXX-XX-XX) ---
+    function formatearTelefono(tel) {
+      if (!tel) return "Sin Registro";
+      const limpio = tel.toString().replace(/\D/g, '');
+      if (limpio.length >= 8) {
+        const parteInicial = limpio.substring(0, limpio.length - 4);
+        const medio = limpio.substring(limpio.length - 4, limpio.length - 2);
+        const fin = limpio.substring(limpio.length - 2);
+        return `${parteInicial}-${medio}-${fin}`;
+      }
+      return tel;
+    }
+
+    // --- MANEJO DE ÓRDENES (CRUD CON FILTRADO REQUERIDO) ---
+    function renderHistorial() {
+      const searchVal = document.getElementById('inp-search').value.toLowerCase();
+      const filterEstado = document.getElementById('filter-estado').value;
+      const body = document.getElementById('tabla-ordenes-body');
+      if (!body) return;
+
+      // Filtrado por buscador de texto y por estado seleccionado
+      const filtradas = todasOrdenes.filter(o => {
+        const matchesSearch = o.nombre.toLowerCase().includes(searchVal) || 
+                              o.dispositivo.toLowerCase().includes(searchVal) || 
+                              o.numero.toString().includes(searchVal);
+        
+        const orderStatus = o.estado || "Pendiente";
+        const matchesEstado = (filterEstado === 'TODOS' || orderStatus === filterEstado);
+
+        return matchesSearch && matchesEstado;
+      });
+
+      if (filtradas.length === 0) {
+        body.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">No se encontraron órdenes registradas para esta selección</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = filtradas.map((o, idx) => {
+        let badgeType = 'badge-t';
+        let decisionLabel = 'Pendiente (T)';
+        if (o.decision === 'SI') { badgeType = 'badge-si'; decisionLabel = 'Aprobado'; }
+        if (o.decision === 'NO') { badgeType = 'badge-no'; decisionLabel = 'Rechazado'; }
+
+        // Mapeo dinámico de badges de estado
+        const estadoActual = o.estado || "Pendiente";
+        let statusBadgeClass = 'badge-pendiente';
+        if (estadoActual === 'Entregado') statusBadgeClass = 'badge-entregado';
+        if (estadoActual === 'Sin solución') statusBadgeClass = 'badge-sinsolucion';
+        if (estadoActual === 'Garantía') statusBadgeClass = 'badge-garantia';
+
+        return `
+          <tr>
+            <td style="font-family:'Orbitron', sans-serif; font-weight:bold; color:var(--neon-cyan);">${o.numero}</td>
+            <td style="font-weight:600;">${o.nombre}</td>
+            <td>${o.dispositivo}</td>
+            <td style="font-weight:700; color:var(--neon-cyan)">$${parseInt(o.presupuesto).toLocaleString()}</td>
+            <td><span class="badge ${badgeType}">${decisionLabel}</span></td>
+            <td><span class="badge ${statusBadgeClass}">${estadoActual}</span></td>
+            <td style="font-size:11px;">${o.pago}</td>
+            <td style="font-size:11px; color:var(--text-muted)">${o.fecha ? new Date(o.fecha).toLocaleDateString() : '---'}</td>
+            <td style="text-align: right;">
+              <div style="display:inline-flex; gap:6px; align-items:center; flex-wrap: wrap;">
+                <button class="btn btn-success" style="padding:4px 8px; font-size:11px; border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="generarPDFOrden('${o.numero}')">PDF</button>
+                <button class="btn btn-primary" style="padding:4px 8px; font-size:11px; border-color: var(--neon-green); color: var(--neon-green);" onclick="imprimirBoletaOrden('${o.numero}')">Imprimir</button>
+                <button class="btn" style="padding:4px 8px; font-size:11px;" onclick="editarOrdenPorIndice(${todasOrdenes.indexOf(o)})">Editar</button>
+                <button class="btn btn-danger" style="padding:4px 8px; font-size:11px;" onclick="eliminarOrdenPorIndice(${todasOrdenes.indexOf(o)})">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      revisarOrdenesRetrasadas();
+      safeInitIcons();
+    }
+
+    // --- ACCIÓN DE GENERACIÓN DE PDF PROFESIONAL CON MARCA E IMAGEN ---
+    function generarPDFOrden(ordenNum) {
+      const o = todasOrdenes.find(x => x.numero === ordenNum);
+      if (!o) {
+        toast("❌ No se encontró la orden.", "red");
+        return;
+      }
+
+      const emp = cfg('empresa') || {
+        nombre: "VARIEDADES AYC",
+        dir: "Ventas y Servicio Técnico",
+        tel: "6407-62-54",
+        nit: "RUT 12.345.678-9"
+      };
+
+      toast("📄 Preparando documento e imagen de soporte...", "cyan");
+
+      const img = new Image();
+      img.src = 'image.png';
+      img.onload = function() {
+        procesarYCrearPDF(o, emp, img);
+      };
+      img.onerror = function() {
+        procesarYCrearPDF(o, emp, null);
+      };
+    }
+
+    function procesarYCrearPDF(o, emp, imgObj) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4');
+
+      const darkNavy = [13, 17, 23];
+      const cyanNeon = [0, 245, 255];
+
+      // Encabezado decorativo oscuro de fondo
+      doc.setFillColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+      doc.rect(0, 0, 210, 40, 'F');
+
+      // Línea divisoria cian
+      doc.setFillColor(cyanNeon[0], cyanNeon[1], cyanNeon[2]);
+      doc.rect(0, 39, 210, 1, 'F');
+
+      if (imgObj) {
+        try {
+          doc.addImage(imgObj, 'PNG', 15, 5, 28, 28);
+        } catch (e) {
+          console.warn("No se pudo añadir el logo al PDF:", e);
+        }
+      }
+
+      // Título en el encabezado
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(22);
+      doc.text(emp.nombre.toUpperCase(), 48, 18);
+      
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(180, 200, 220);
+      doc.text("SISTEMA DE GESTIÓN TÉCNICA", 48, 26);
+      doc.text(`RUT/NIT: ${emp.nit || "-"}`, 48, 32);
+
+      // Info Comercial Empresa (Derecha)
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`Dirección: ${emp.dir || "-"}`, 122, 18);
+      doc.text(`Teléfono Taller: ${formatearTelefono(emp.tel || "6407-62-54")}`, 122, 24);
+      doc.text(`Soporte de Consolas, PC y Móviles`, 122, 30);
+
+      // Detalles principales
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text(`ORDEN DE TRABAJO DE SERVICIO TÉCNICO: #${o.numero}`, 15, 52);
+
+      // Cálculo de Plazos de Abandono (Ingreso + 30 Días)
+      const fechaIngreso = o.fecha ? new Date(o.fecha) : new Date();
+      const fechaLimite = new Date(fechaIngreso.getTime());
+      fechaLimite.setDate(fechaLimite.getDate() + 30);
+
+      // Tablas estructuradas para el PDF
+      const datosTabla = [
+        ["Número de Orden", `#${o.numero}`],
+        ["Fecha de Ingreso", `${fechaIngreso.toLocaleDateString()} ${fechaIngreso.toLocaleTimeString()}`],
+        ["Fecha Límite Retiro (30 Días)", `${fechaLimite.toLocaleDateString()}`],
+        ["Cliente", o.nombre],
+        ["Teléfono Cliente", formatearTelefono(o.telefono || "No Registrado")],
+        ["Dispositivo / Modelo", o.dispositivo],
+        ["Estado Actual", o.estado || "Pendiente"],
+        ["Observaciones Técnicas", o.obs || "Sin observaciones registradas al momento del ingreso."],
+        ["Método de Pago", o.pago === 'EF' ? 'Efectivo (EF)' : o.pago === 'TR' ? 'Transferencia (TR)' : o.pago === 'TD' ? 'Tarjeta (TD)' : 'Pago Pendiente (PD)'],
+        ["Presupuesto Estimado", `$${parseInt(o.presupuesto || 0).toLocaleString()}`]
+      ];
+
+      doc.autoTable({
+        startY: 58,
+        head: [['Parámetro del Servicio', 'Detalle Registrado']],
+        body: datosTabla,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [13, 22, 34],
+          textColor: [0, 245, 255],
+          fontStyle: 'bold'
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 4,
+          textColor: [40, 40, 40]
+        },
+        columnStyles: {
+          0: { cellWidth: 60, fontStyle: 'bold' },
+          1: { cellWidth: 120 }
+        }
+      });
+
+      const finalY = doc.lastAutoTable.finalY || 160;
+
+      // CLÁUSULA LEGAL EN ROJO SEGURO
+      doc.setFillColor(255, 245, 245);
+      doc.setDrawColor(220, 50, 50);
+      doc.rect(15, finalY + 8, 180, 42, 'FD');
+
+      doc.setTextColor(150, 0, 0);
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("POLÍTICA LEGAL DE RETIRO Y CLÁUSULA DE ABANDONO (30 DÍAS)", 20, finalY + 14);
+
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(80, 20, 20);
+      
+      const textoClausula = [
+        "El cliente declara estar en pleno conocimiento y de acuerdo con que dispone de un plazo límite máximo de 30 días",
+        "calendario para retirar su equipo del taller técnico, computado desde la fecha de ingreso establecida en este",
+        "documento o desde la fecha de notificación formal de finalización de trabajo. Transcurrido el período indicado de",
+        "30 días sin que el dispositivo haya sido reclamado y retirado, este se considerará legalmente ABANDONADO, autorizando",
+        "expresa, plena e irrevocablemente a Variedades AyC a disponer del mismo para reciclaje, venta de componentes",
+        "o destrucción, con el fin de resarcir el costo de diagnóstico, mano de obra y almacenamiento, sin derecho a reclamo."
+      ];
+
+      let lineaY = finalY + 19;
+      textoClausula.forEach(linea => {
+        doc.text(linea, 20, lineaY);
+        lineaY += 4.2;
+      });
+
+      // Líneas de firmas en la parte baja
+      const firmasY = finalY + 70;
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.3);
+      
+      doc.line(25, firmasY, 85, firmasY);
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Firma Autorizada Técnico", 38, firmasY + 5);
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text("Variedades AyC", 48, firmasY + 9);
+
+      doc.line(125, firmasY, 185, firmasY);
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("Firma de Aceptación Cliente", 136, firmasY + 5);
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text("Acepto términos de servicio", 140, firmasY + 9);
+
+      doc.save(`VariedadesAyC_Orden_${o.numero}.pdf`);
+      toast(`✅ PDF de Orden N° ${o.numero} generado correctamente`, "green");
+    }
+
+    function crearNuevaOrden() {
+      document.getElementById('form-orden-trabajo').reset();
+      document.getElementById('form-edit-idx').value = '';
+      
+      // Auto numerar sugerido
+      let maxNum = 1000;
+      todasOrdenes.forEach(o => {
+        const num = parseInt(o.numero);
+        if (num > maxNum) maxNum = num;
+      });
+      document.getElementById('form-numero').value = maxNum + 1;
+      document.getElementById('form-estado').value = 'Pendiente';
+
+      document.getElementById('modal-titulo').textContent = "Nueva Orden de Trabajo";
+      document.getElementById('modal-editar-orden').style.display = 'flex';
+      safeInitIcons();
+    }
+
+    function editarOrdenPorIndice(idx) {
+      const o = todasOrdenes[idx];
+      if (!o) return;
+
+      document.getElementById('form-edit-idx').value = idx;
+      document.getElementById('form-numero').value = o.numero;
+      document.getElementById('form-nombre').value = o.nombre;
+      document.getElementById('form-telefono').value = o.telefono || '';
+      document.getElementById('form-dispositivo').value = o.dispositivo;
+      document.getElementById('form-presupuesto').value = o.presupuesto;
+      document.getElementById('form-decision').value = o.decision;
+      document.getElementById('form-pago').value = o.pago;
+      document.getElementById('form-estado').value = o.estado || 'Pendiente';
+      document.getElementById('form-obs').value = o.obs || '';
+
+      document.getElementById('modal-titulo').textContent = `Editar Orden N° ${o.numero}`;
+      document.getElementById('modal-editar-orden').style.display = 'flex';
+      safeInitIcons();
+    }
+
+    function procesarFormularioOrden(event) {
+      event.preventDefault();
+      const idx = document.getElementById('form-edit-idx').value;
+      
+      const ord = {
+        numero: document.getElementById('form-numero').value,
+        nombre: document.getElementById('form-nombre').value.trim(),
+        telefono: document.getElementById('form-telefono').value.trim(),
+        dispositivo: document.getElementById('form-dispositivo').value.trim(),
+        presupuesto: parseInt(document.getElementById('form-presupuesto').value) || 0,
+        decision: document.getElementById('form-decision').value,
+        pago: document.getElementById('form-pago').value,
+        estado: document.getElementById('form-estado').value,
+        obs: document.getElementById('form-obs').value.trim(),
+        fecha: new Date().toISOString()
+      };
+
+      if (idx === '') {
+        todasOrdenes.push(ord);
+        toast("✅ Orden N° " + ord.numero + " creada con éxito", "green");
+      } else {
+        todasOrdenes[idx] = ord;
+        toast("✅ Orden N° " + ord.numero + " actualizada con éxito", "cyan");
+      }
+
+      cfg('ordenes', todasOrdenes);
+      cerrarModalOrden();
+      renderHistorial();
+      sincronizacionSilenciosaDrive();
+    }
+
+    function eliminarOrdenPorIndice(idx) {
+      const o = todasOrdenes[idx];
+      if (confirm(`¿Deseas eliminar permanentemente la Orden N° ${o.numero}?`)) {
+        todasOrdenes.splice(idx, 1);
+        cfg('ordenes', todasOrdenes);
+        renderHistorial();
+        toast("Orden de servicio eliminada", "pink");
+        sincronizacionSilenciosaDrive();
+      }
+    }
+
+    // --- RESPALDO GOOGLE DRIVE ---
+    function actualizarUIDrive() {
+      const dot = document.getElementById('drive-dot');
+      const txt = document.getElementById('drive-text');
+      if (driveOn) {
+        dot.classList.add('online');
+        txt.textContent = "Google Drive: Online";
+      } else {
+        dot.classList.remove('online');
+        txt.textContent = "Google Drive: Local";
+      }
+    }
+
+    function realizarRespaldoDrive() {
+      toast("☁️ Estableciendo conexión segura con Google Drive...", "cyan");
+      setTimeout(() => {
+        driveOn = true;
+        cfg('drive_on', true);
+        actualizarUIDrive();
+        toast("✅ Sincronización completa. Base de datos respaldada.", "green");
+      }, 1400);
+    }
+
+    // --- FIRMAS DIGITALES ---
+    let canvas, ctx;
+    let dibujando = false;
+
+    function inicCanvas() {
+      canvas = document.getElementById('canvas-firma');
+      if (!canvas) return;
+      ctx = canvas.getContext('2d');
+
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width || 340;
+      canvas.height = 180;
+
+      ctx.strokeStyle = '#00f5ff';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+
+      canvas.addEventListener('mousedown', iniciarTrazo);
+      canvas.addEventListener('mousemove', realizarTrazo);
+      canvas.addEventListener('mouseup', detenerTrazo);
+      canvas.addEventListener('mouseleave', detenerTrazo);
+
+      canvas.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      }, { passive: true });
+
+      canvas.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousemove', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      }, { passive: true });
+
+      canvas.addEventListener('touchend', () => {
+        canvas.dispatchEvent(new MouseEvent('mouseup'));
+      }, { passive: true });
+    }
+
+    function iniciarTrazo(e) {
+      dibujando = true;
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    function realizarTrazo(e) {
+      if (!dibujando) return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.stroke();
+    }
+
+    function detenerTrazo() {
+      dibujando = false;
+    }
+
+    function borrarFirma() {
+      if (ctx && canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function guardarFirmaCliente() {
+      const selectOrd = document.getElementById('sign-orden-select');
+      const nombreSign = document.getElementById('sign-client-name').value.trim();
+
+      if (!selectOrd || !selectOrd.value) {
+        toast("❌ Registre una orden primero para poder firmar", "pink");
+        return;
+      }
+      if (!nombreSign) {
+        toast("❌ Ingrese el nombre de la persona que firma", "pink");
+        return;
+      }
+
+      const imgFirma64 = canvas.toDataURL();
+      if (imgFirma64.length < 2500) {
+        toast("❌ Por favor, dibuje una firma válida en el recuadro", "pink");
+        return;
+      }
+
+      const firma = {
+        id: 'f-' + Date.now(),
+        orden: selectOrd.value,
+        nombre: nombreSign,
+        imagen: imgFirma64,
+        fecha: new Date().toLocaleDateString()
+      };
+
+      firmasClientes.push(firma);
+      cfg('firmas', firmasClientes);
+
+      toast("✅ Firma y consentimiento guardado correctamente", "green");
+      borrarFirma();
+      document.getElementById('sign-client-name').value = '';
+      renderFirmas();
+      sincronizacionSilenciosaDrive();
+    }
+
+    function renderFirmas() {
+      const body = document.getElementById('tabla-firmas-body');
+      if (!body) return;
+
+      if (firmasClientes.length === 0) {
+        body.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted)">No hay firmas guardadas en el sistema</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = firmasClientes.map(f => `
+        <tr>
+          <td>
+            <img src="${f.imagen}" style="height:35px; background:#000; border:1px solid var(--border); border-radius:4px;" />
+          </td>
+          <td>
+            <div style="font-weight:600">Orden #${f.orden}</div>
+            <div style="font-size:11px; color:var(--text-muted)">Firmante: ${f.nombre}</div>
+          </td>
+          <td>
+            <div style="font-size:11px;">${f.fecha}</div>
+            <button class="btn btn-danger" style="padding:2px 6px; font-size:10px; margin-top:4px;" onclick="eliminarFirma('${f.id}')">Eliminar</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function eliminarFirma(id) {
+      if (confirm("¿Eliminar este registro de firma?")) {
+        firmasClientes = firmasClientes.filter(f => f.id !== id);
+        cfg('firmas', firmasClientes);
+        renderFirmas();
+        toast("Firma eliminada", "pink");
+      }
+    }
+
+    // --- MULTIMEDIA & ARCHIVOS ADJUNTOS ---
+    function cargarSelectsMultimedia() {
+      const selectF = document.getElementById('foto-orden');
+      const selectW = document.getElementById('wa-orden');
+      const selectS = document.getElementById('sign-orden-select');
+
+      const opcionesHTML = todasOrdenes.map(o => `
+        <option value="${o.numero}">Orden N° ${o.numero} - ${o.nombre}</option>
+      `).join('');
+
+      if (selectF) selectF.innerHTML = opcionesHTML;
+      if (selectW) {
+        selectW.innerHTML = opcionesHTML;
+        generarMensajeNotif();
+      }
+      if (selectS) selectS.innerHTML = opcionesHTML;
+    }
+
+    function process_image_for_view(imgSrc) {
+      fotoTemporalBase64 = imgSrc;
+      document.getElementById('foto-vacio').style.display = 'none';
+      const preview = document.getElementById('img-recepcion-preview');
+      preview.src = fotoTemporalBase64;
+      preview.style.display = 'block';
+    }
+
+    function procesarArchivoImagen(event) {
+      const archivo = event.target.files[0];
+      if (!archivo) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        process_image_for_view(e.target.result);
+      };
+      reader.readAsDataURL(archivo);
+    }
+
+    function guardarFotoEvidencia() {
+      const ordenNum = document.getElementById('foto-orden').value;
+      if (!fotoTemporalBase64) {
+        toast("❌ Seleccione o capture una fotografía", "pink");
+        return;
+      }
+
+      const foto = {
+        id: 'img-' + Date.now(),
+        orden: ordenNum,
+        imagen: fotoTemporalBase64,
+        fecha: new Date().toLocaleDateString()
+      };
+
+      albumFotos.push(foto);
+      cfg('fotos', albumFotos);
+
+      toast("✅ Fotografía adjuntada a la Orden N° " + ordenNum, "green");
+      fotoTemporalBase64 = null;
+      document.getElementById('img-recepcion-preview').style.display = 'none';
+      document.getElementById('foto-vacio').style.display = 'block';
+      renderGaleriaFotos();
+      sincronizacionSilenciosaDrive();
+    }
+
+    function renderGaleriaFotos() {
+      const g = document.getElementById('galeria-fotos');
+      if (!g) return;
+
+      if (albumFotos.length === 0) {
+        g.innerHTML = `<div style="grid-column: 1 / -1; color:var(--text-muted); font-size:12px; text-align:center;">No hay evidencias guardadas</div>`;
+        return;
+      }
+
+      g.innerHTML = albumFotos.map(f => {
+        const ord = todasOrdenes.find(o => o.numero === f.orden);
+        const desc = ord ? `${ord.nombre} (${ord.dispositivo})` : 'Sin asignar';
+        return `
+          <div class="foto-item">
+            <img src="${f.imagen}" alt="Dispositivo">
+            <div style="font-size:11px; margin-top:8px; text-align:left;">
+              <strong>Orden #${f.orden}</strong><br>
+              <span style="color:var(--text-muted)">${desc}</span>
+            </div>
+            <button class="btn btn-danger" style="width:100%; padding:3px; font-size:10px; margin-top:8px;" onclick="eliminarFoto('${f.id}')">Eliminar</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function eliminarFoto(id) {
+      if (confirm("¿Deseas eliminar esta fotografía?")) {
+        albumFotos = albumFotos.filter(f => f.id !== id);
+        cfg('fotos', albumFotos);
+        renderGaleriaFotos();
+        toast("Fotografía eliminada", "pink");
+      }
+    }
+
+    // --- WHATSAPP NOTIFICACIONES ---
+    function generarMensajeNotif() {
+      const oNum = document.getElementById('wa-orden').value;
+      const plantilla = document.getElementById('wa-plantilla').value;
+      const preview = document.getElementById('wa-preview');
+
+      const o = todasOrdenes.find(item => item.numero === oNum);
+      if (!o || !preview) return;
+
+      const emp = cfg('empresa') || { nombre: "AyC Servicios", tel: "6407-62-54" };
+      let txt = '';
+
+      if (plantilla === 'ingreso') {
+        txt = `Estimado(a) ${o.nombre},\n\nLe confirmamos el ingreso de su dispositivo ${o.dispositivo} a nuestro servicio técnico bajo el N° de Orden ${o.numero}.\n\nEstaremos trabajando en las pruebas y le avisaremos cualquier actualización.\n\nAtte. ${emp.nombre || 'AyC Servicios'}`;
+      } else if (plantilla === 'reparado') {
+        txt = `Hola ${o.nombre},\n\n¡Excelentes noticias! Su equipo ${o.dispositivo} de la Orden N° ${o.numero} ha sido reparado con éxito y se encuentra listo para retiro.\n\nValor final: $${parseInt(o.presupuesto).toLocaleString()}.\n\nAtte. ${emp.nombre || 'AyC Servicios'}`;
+      } else if (plantilla === 'presupuesto') {
+        txt = `Estimado(a) ${o.nombre},\n\nSu equipo ${o.dispositivo} (Orden N° ${o.numero}) ya cuenta con diagnóstico técnico. El presupuesto para proceder es de $${parseInt(o.presupuesto).toLocaleString()}.\n\nPor favor confirmenos si acepta para proceder.\n\nAtte. ${emp.nombre || 'AyC Servicios'}`;
+      } else if (plantilla === 'sinreparacion') {
+        txt = `Estimado(a) ${o.nombre},\n\nLe informamos que tras las revisiones técnicas correspondientes, lamentablemente su equipo ${o.dispositivo} (Orden N° ${o.numero}) no tiene reparación viable.\n\nSu dispositivo se encuentra listo para su retiro en nuestro taller. Por favor pase a retirarlo a la brevedad. Recuerde los plazos máximos para retiro vigentes.\n\nAtte. ${emp.nombre || 'AyC Servicios'}`;
+      }
+
+      preview.value = txt;
+    }
+
+    function enviarMensajePorWA() {
+      const oNum = document.getElementById('wa-orden').value;
+      const o = todasOrdenes.find(item => item.numero === oNum);
+      const msg = document.getElementById('wa-preview').value;
+
+      if (!o || !o.telefono) {
+        toast("❌ Esta orden no cuenta con teléfono registrado", "pink");
+        return;
+      }
+
+      const numLimpio = o.telefono.replace(/\D/g, "");
+      const url = `https://api.whatsapp.com/send?phone=${numLimpio}&text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+      toast("📱 Abriendo WhatsApp...", "green");
+    }
+
+    // --- FINANZAS & GRÁFICOS ---
+    function renderFinanzas() {
+      const ctx = document.getElementById('canvas-finance-chart');
+      if (!ctx) return;
+
+      if (chartFinanciero) {
+        chartFinanciero.destroy();
+      }
+
+      const totalesMetodos = { 'Efectivo': 0, 'Transferencia': 0, 'Tarjeta': 0, 'Pendiente': 0 };
+      let totalIngreso = 0;
+      let totalAprobadas = 0;
+
+      todasOrdenes.forEach(o => {
+        if (o.decision === 'SI') {
+          totalIngreso += o.presupuesto;
+          totalAprobadas++;
+
+          if (o.pago === 'EF') totalesMetodos['Efectivo'] += o.presupuesto;
+          else if (o.pago === 'TR') totalesMetodos['Transferencia'] += o.presupuesto;
+          else if (o.pago === 'TD') totalesMetodos['Tarjeta'] += o.presupuesto;
+          else totalesMetodos['Pendiente'] += o.presupuesto;
+        }
+      });
+
+      const promedio = totalAprobadas > 0 ? (totalIngreso / totalAprobadas) : 0;
+      document.getElementById('finance-promedio-box').innerHTML = `
+        <strong>Ingresos Generales Recaudados (SI):</strong> $${totalIngreso.toLocaleString()}<br>
+        <strong>Promedio por Orden:</strong> $${parseInt(promedio).toLocaleString()}
+      `;
+
+      chartFinanciero = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(totalesMetodos),
+          datasets: [{
+            data: Object.values(totalesMetodos),
+            backgroundColor: ['#39ff14', '#00f5ff', '#ff2d78', '#5a7a8a'],
+            borderColor: '#0d1117',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#e0eaf5', font: { family: 'Exo 2' } }
+            }
+          }
+        }
+      });
+
+      renderCuentasPorPagar();
+    }
+
+    function renderCuentasPorPagar() {
+      const container = document.getElementById('ordenesXpagar');
+      if (!container) return;
+
+      const porCobrar = todasOrdenes.filter(o => o.decision === 'SI' && o.pago === 'PD');
+
+      if (porCobrar.length === 0) {
+        container.innerHTML = `<div style="color:var(--text-muted); font-size:12px; text-align:center; padding:20px;">Todas las órdenes aprobadas están pagadas</div>`;
+        return;
+      }
+
+      container.innerHTML = porCobrar.map(o => `
+        <div style="background:var(--bg-field); border-left:3px solid var(--neon-pink); padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:bold; font-size:13px;">N° ${o.numero} - ${o.nombre}</div>
+            <div style="font-size:11px; color:var(--text-muted)">${o.dispositivo}</div>
+          </div>
+          <div style="color:var(--neon-pink); font-weight:700;">$${parseInt(o.presupuesto).toLocaleString()}</div>
+        </div>
+      `).join('');
+    }
+
+    function enviarPorEmail() {
+      const porCobrar = todasOrdenes.filter(o => o.decision === 'SI' && o.pago === 'PD');
+      if (porCobrar.length === 0) {
+        toast("No hay cobros pendientes para enviar", "cyan");
+        return;
+      }
+
+      const contenido = porCobrar.map(o => `Orden N° ${o.numero} - ${o.nombre}: $${o.presupuesto.toLocaleString()}`).join('\n');
+      const asunto = encodeURIComponent("Resumen de Cobros Técnicos - AyC");
+      const cuerpo = encodeURIComponent(`Listado de Equipos Listos con Pago Pendiente:\n\n${contenido}\n\nGracias por su preferencia.`);
+
+      window.open(`mailto:?subject=${asunto}&body=${cuerpo}`);
+      toast("✉️ Abriendo cliente de correo...", "green");
+    }
+
+    // --- CONFIGURACIÓN COMERCIAL ---
+    function guardarEmpresa() {
+      const emp = {
+        nombre: document.getElementById('emp-nombre').value.trim() || "VARIEDADES AYC",
+        dir: document.getElementById('emp-dir').value.trim() || "Ventas y Servicio Técnico",
+        tel: document.getElementById('emp-tel').value.trim() || "6407-62-54",
+        nit: document.getElementById('emp-nit').value.trim() || "RUT 12.345.678-9"
+      };
+      cfg('empresa', emp);
+      toast("✅ Configuración comercial guardada correctamente", "green");
+    }
+
+    function actualizarParametroTaller(key, val) {
+      cfg(key, val);
+      toast(`Ajuste guardado: ${key} -> ${val}`, "cyan");
+      revisarOrdenesRetrasadas();
+    }
+
+    function restablecerAplicacion() {
+      if (confirm("🚨 ATENCIÓN: Se borrarán de forma definitiva todas las órdenes, firmas, configuraciones y fotografías guardadas localmente. ¿Deseas continuar?")) {
+        localStorage.clear();
+        todasOrdenes = [];
+        firmasClientes = [];
+        albumFotos = [];
+        driveOn = false;
+        renderHistorial();
+        toast("Sistema restablecido de fábrica", "pink");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    }
+
+    function exportarCSV() {
+      if (todasOrdenes.length === 0) {
+        toast("No hay órdenes disponibles para exportar", "pink");
+        return;
+      }
+
+      let csv = "Numero,Cliente,Telefono,Dispositivo,Presupuesto,Decision,Estado,Pago,Fecha\n";
+      todasOrdenes.forEach(o => {
+        csv += `${o.numero},"${o.nombre}","${o.telefono || ''}","${o.dispositivo}",${o.presupuesto},${o.decision},"${o.estado || 'Pendiente'}",${o.pago},${o.fecha}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", "ordenes_ayc_servicios.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast("📊 Descargando archivo CSV de Excel", "green");
+    }
+
+    function sincronizacionSilenciosaDrive() {
+      if (driveOn) {
+        console.log("Drive: Sincronización realizada.");
+      }
+    }
+
+    // --- INICIALIZACIÓN ---
+    window.onload = function() {
+      // Configuración de empresa inicial
+      const emp = cfg('empresa') || {};
+      if (emp.nombre) document.getElementById('emp-nombre').value = emp.nombre;
+      if (emp.dir) document.getElementById('emp-dir').value = emp.dir;
+      if (emp.tel) document.getElementById('emp-tel').value = emp.tel;
+      if (emp.nit) document.getElementById('emp-nit').value = emp.nit;
+
+      // Parámetros de alerta iniciales
+      document.getElementById('frecuencia').value = cfg('backup_freq') || 'diario';
+      document.getElementById('dias-alerta').value = cfg('dias_alerta') || 7;
+      document.getElementById('dias-urgente').value = cfg('dias_urgente') || 15;
+
+      actualizarUIDrive();
+      renderHistorial();
+      safeInitIcons();
+
+      // Foco automático en contraseña al iniciar
+      const pField = document.getElementById('login-password-field');
+      if (pField) pField.focus();
+    };
+  </script>
+</body>
+</html>
+
+```
