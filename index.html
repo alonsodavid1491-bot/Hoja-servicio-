@@ -1,0 +1,1806 @@
+```html
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-[#030712]">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AyC - Sistema de Gestión Sincronizado</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            orbitron: ['Orbitron', 'sans-serif'],
+          },
+          colors: {
+            neonCyan: '#00f5ff',
+            neonPink: '#ff2d78',
+            neonGreen: '#39ff14',
+            neonYellow: '#ffdf00',
+            neonPurple: '#bd53ff',
+            darkBg: '#030712',
+            cardBg: '#0b1329',
+            fieldBg: '#111c44',
+            borderColor: '#1e295d'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    /* Efecto Glow Neon */
+    .glow-cyan { box-shadow: 0 0 15px rgba(0, 245, 255, 0.3); }
+    .glow-pink { box-shadow: 0 0 15px rgba(255, 45, 120, 0.3); }
+    .glow-green { box-shadow: 0 0 15px rgba(57, 255, 20, 0.3); }
+    
+    /* Scrollbars personalizadas */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #030712; }
+    ::-webkit-scrollbar-thumb { background: #1e295d; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00f5ff; }
+
+    /* Estilo Impresión */
+    @media print {
+      body * { visibility: hidden; }
+      #printable-receipt, #printable-receipt * { visibility: visible; }
+      #printable-receipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        background: white !important;
+        color: black !important;
+      }
+    }
+  </style>
+</head>
+<body class="font-sans text-slate-200 min-h-screen flex flex-col bg-[#030712] selection:bg-neonCyan/30 selection:text-white">
+
+  <!-- NOTIFICACIÓN TOAST MEJORADA -->
+  <div id="toast-msg" class="fixed bottom-6 right-6 z-[12000] transition-all duration-300 transform translate-y-12 opacity-0 flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border backdrop-blur-md bg-slate-900/95">
+    <div id="toast-icon"></div>
+    <p id="toast-text" class="text-sm font-semibold"></p>
+  </div>
+
+  <!-- MODAL DE CONFIRMACIÓN CUSTOM -->
+  <div id="confirm-modal" class="fixed inset-0 z-[11000] hidden items-center justify-center p-4 bg-black/85 backdrop-blur-sm transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl transform scale-95 transition-transform duration-300 glow-pink">
+      <div class="flex items-center gap-4 text-neonPink mb-4">
+        <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+        <h3 class="text-lg font-orbitron font-bold tracking-wider">Confirmar Acción</h3>
+      </div>
+      <p id="confirm-message" class="text-slate-300 text-sm leading-relaxed mb-6"></p>
+      <div class="flex gap-3 justify-end">
+        <button onclick="closeConfirm(false)" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition font-semibold text-sm">Cancelar</button>
+        <button onclick="closeConfirm(true)" class="px-5 py-2 rounded-lg bg-neonPink text-slate-950 hover:bg-pink-600 font-bold text-sm transition shadow-lg shadow-neonPink/25">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA DE INICIO DE SESIÓN -->
+  <div id="login-overlay" class="fixed inset-0 bg-[#030712] z-[10000] flex items-center justify-center p-4">
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 w-full max-w-md text-center shadow-2xl relative overflow-hidden backdrop-blur-md glow-cyan">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neonCyan via-neonPink to-neonGreen"></div>
+      
+      <img id="logo-preview-img" src="image.png" class="w-28 h-28 rounded-full object-cover mx-auto mb-6 border-2 border-neonCyan shadow-lg shadow-neonCyan/30" alt="Variedades AyC" onerror="showFallbackLogo(this)">
+      
+      <h2 class="text-2xl font-orbitron font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-neonCyan mb-1">Variedades AyC</h2>
+      <p class="text-xs uppercase tracking-widest text-slate-500 mb-8 font-medium">Control de Seguridad y Autenticación</p>
+      
+      <div class="text-left mb-6">
+        <label class="block text-xs uppercase text-slate-400 font-semibold tracking-wider mb-2">Contraseña del Operador</label>
+        <div class="relative">
+          <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-slate-500"></i>
+          <input type="password" id="login-password-field" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-center font-mono text-xl tracking-widest text-white placeholder-slate-700 focus:border-neonCyan focus:ring-1 focus:ring-neonCyan/40 outline-none transition duration-300" placeholder="••••" onkeydown="checkLoginKey(event)">
+        </div>
+      </div>
+      
+      <button class="w-full py-3.5 px-6 rounded-xl bg-neonCyan text-slate-950 font-extrabold tracking-wider hover:bg-cyan-400 hover:shadow-lg hover:shadow-neonCyan/35 transition-all duration-300" onclick="procesarLogin()">Entrar al Terminal</button>
+      
+      <p class="text-[10px] text-slate-600 mt-8">Taller de Reparación Especializado &copy; 2026</p>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div id="app-main-view" class="flex-1 flex flex-col hidden">
+    <!-- HEADER -->
+    <header class="bg-slate-950/80 border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+          <img src="image.png" class="w-14 h-14 rounded-full object-cover border-2 border-neonCyan/60 shadow-md shadow-neonCyan/20" alt="Variedades AyC" onerror="showFallbackLogo(this)">
+          <div>
+            <h1 class="text-xl sm:text-2xl font-orbitron font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-neonCyan">AyC SERVICIOS</h1>
+            <p class="text-[10px] text-slate-400 tracking-widest uppercase font-semibold">Taller Integrado & Registro de Firmas</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3 bg-slate-900/60 border border-slate-800 px-4 py-2 rounded-full">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-slate-500" id="drive-ping"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-slate-500" id="drive-dot"></span>
+          </span>
+          <span id="drive-text" class="text-xs font-semibold tracking-wider text-slate-400">Verificando enlaces...</span>
+        </div>
+      </div>
+      <div class="h-[2px] w-full bg-gradient-to-r from-neonCyan via-neonPink to-neonGreen"></div>
+    </header>
+
+    <!-- NAVEGACIÓN -->
+    <nav class="bg-slate-950/40 border-b border-slate-900 flex overflow-x-auto scrollbar-none">
+      <div class="max-w-7xl mx-auto px-4 w-full flex">
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap active" onclick="changeTab('tab-orders')">
+          <i data-lucide="clipboard-list" class="w-4 h-4"></i> Órdenes de Trabajo
+        </button>
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap" onclick="changeTab('tab-signatures')">
+          <i data-lucide="pen-tool" class="w-4 h-4"></i> Firma Digital
+        </button>
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap" onclick="changeTab('tab-multimedia')">
+          <i data-lucide="camera" class="w-4 h-4"></i> Multimedia & WhatsApp
+        </button>
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap" onclick="changeTab('tab-finance')">
+          <i data-lucide="line-chart" class="w-4 h-4"></i> Finanzas
+        </button>
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap" onclick="changeTab('tab-config')">
+          <i data-lucide="settings" class="w-4 h-4"></i> Configuración
+        </button>
+      </div>
+    </nav>
+
+    <!-- CONTENIDO VISTAS -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 py-6 w-full">
+
+      <!-- 1. ÓRDENES -->
+      <section id="tab-orders" class="view-panel block space-y-6">
+        <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl shadow-xl">
+          <div class="flex flex-col lg:flex-row gap-4 items-end">
+            <div class="w-full lg:w-1/2">
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Buscar Dispositivo o Cliente</label>
+              <div class="relative">
+                <i data-lucide="search" class="absolute left-4 top-3 w-5 h-5 text-slate-500"></i>
+                <input type="text" id="inp-search" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-12 pr-4 text-sm text-white focus:border-neonCyan outline-none transition duration-300" oninput="renderHistorial()" placeholder="Ej. Juan Pérez / Samsung S21 / Consola PS5...">
+              </div>
+            </div>
+            
+            <div class="w-full sm:w-1/2 lg:w-1/4">
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Filtrar por Estado</label>
+              <select id="filter-estado" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer" onchange="renderHistorial()">
+                <option value="TODOS">Todos los Estados</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Entregado">Entregado</option>
+                <option value="Sin solución">Sin solución</option>
+                <option value="Garantía">Garantía</option>
+              </select>
+            </div>
+
+            <div class="w-full sm:w-1/2 lg:w-1/4 flex gap-2">
+              <button class="flex-1 py-2.5 px-4 rounded-xl bg-neonCyan/10 border border-neonCyan/40 text-neonCyan hover:bg-neonCyan hover:text-slate-950 font-bold text-sm tracking-wider transition-all duration-300 flex items-center justify-center gap-2" onclick="crearNuevaOrden()">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Nueva Orden
+              </button>
+              <button class="py-2.5 px-4 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-neonCyan font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2" onclick="exportarCSV()">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> CSV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="box-alertas-retraso" class="bg-slate-950 border border-neonPink/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-neonPink"></div>
+          <h4 class="text-sm font-orbitron font-bold text-neonPink tracking-wider flex items-center gap-2 mb-4">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i> ALERTA: EQUIPOS DETENIDOS EN TALLER
+          </h4>
+          <div id="alertas-retraso-container" class="space-y-2"></div>
+        </div>
+
+        <div class="bg-slate-900/40 border border-slate-800/85 rounded-2xl shadow-xl overflow-hidden">
+          <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+            <h3 class="font-orbitron font-bold text-sm uppercase tracking-widest text-slate-300">Registro General de Diagnósticos</h3>
+            <span class="text-xs bg-slate-800 text-slate-400 font-semibold px-3 py-1 rounded-full" id="row-count">0 Órdenes</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr class="border-b border-slate-800 bg-slate-950/40">
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Orden</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Cliente</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Dispositivo</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Presupuesto</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Decisión</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Estado</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Método</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Ingreso</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-ordenes-body" class="divide-y divide-slate-800/50"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. FIRMA DIGITAL -->
+      <section id="tab-signatures" class="view-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-neonGreen"></div>
+            <h3 class="font-orbitron font-bold text-sm tracking-widest uppercase text-slate-300 mb-2">Consentimiento de Pruebas de Diagnóstico</h3>
+            <p class="text-xs text-slate-400 mb-6 leading-relaxed">El firmante aprueba expresamente la revisión interna de su equipo, aceptando los posibles riesgos asociados de diagnóstico de taller.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Asociar a la Orden</label>
+                <select id="sign-orden-select" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none"></select>
+              </div>
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Nombre de Autorizador</label>
+                <input type="text" id="sign-client-name" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Escriba el nombre completo">
+              </div>
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Firme en el lienzo interactivo</label>
+                <div class="border border-slate-800 rounded-xl bg-slate-950 overflow-hidden relative touch-none">
+                  <canvas id="canvas-firma" class="w-full h-40 cursor-crosshair block bg-slate-950"></canvas>
+                </div>
+              </div>
+              <div class="flex gap-3 justify-end pt-2">
+                <button class="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 font-semibold transition" onclick="borrarFirma()">Limpiar</button>
+                <button class="px-5 py-2 text-xs rounded-lg bg-neonGreen text-slate-950 hover:bg-green-500 font-bold transition" onclick="guardarFirmaCliente()">Registrar Autorización</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl shadow-xl overflow-hidden">
+            <div class="p-5 border-b border-slate-800">
+              <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">Historial de Firmas Digitales</h3>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="bg-slate-950/40 border-b border-slate-800">
+                    <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan">Firma</th>
+                    <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan">Referencia</th>
+                    <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-firmas-body" class="divide-y divide-slate-800/50"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. MULTIMEDIA & WHATSAPP -->
+      <section id="tab-multimedia" class="view-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
+            <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300 mb-1">Registro Fotográfico del Estado del Equipo</h3>
+            
+            <div>
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Vincular a Orden</label>
+              <select id="foto-orden" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none"></select>
+            </div>
+
+            <div class="border border-slate-800 rounded-xl bg-slate-950/60 min-h-[180px] flex flex-col items-center justify-center p-4 relative">
+              <div id="foto-vacio" class="text-center text-slate-500 space-y-2">
+                <i data-lucide="image" class="w-10 h-10 mx-auto opacity-40"></i>
+                <p class="text-xs">No hay imagen cargada para previsualización</p>
+              </div>
+              <img id="img-recepcion-preview" class="hidden max-h-[220px] rounded-lg object-contain border border-slate-800" alt="Evidencia">
+            </div>
+
+            <div class="flex gap-3">
+              <label class="flex-1 py-2.5 px-4 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-center text-sm font-semibold hover:border-neonCyan transition cursor-pointer flex items-center justify-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4"></i> Cargar Archivo
+                <input type="file" id="foto-file-input" accept="image/*" class="hidden" onchange="procesarArchivoImagen(event)">
+              </label>
+              <button class="flex-1 py-2.5 px-4 rounded-xl bg-neonCyan text-slate-950 font-bold text-sm hover:bg-cyan-400 transition" onclick="guardarFotoEvidencia()">Guardar Imagen</button>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-neonPink"></div>
+            <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">Generación Automática de Mensajes</h3>
+            
+            <div>
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Seleccionar Orden</label>
+              <select id="wa-orden" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none" onchange="generarMensajeNotif()"></select>
+            </div>
+
+            <div>
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Tipo de Mensaje</label>
+              <select id="wa-plantilla" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none" onchange="generarMensajeNotif()">
+                <option value="ingreso">Ingreso de Equipo a Taller</option>
+                <option value="reparado">Reparación Finalizada Exitosamente</option>
+                <option value="presupuesto">Cotización Técnica Estimada</option>
+                <option value="sinreparacion">Sin Reparación / Listo para Retirar</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Vista Previa del Texto</label>
+              <textarea id="wa-preview" class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs font-mono text-neonGreen h-24 focus:outline-none" readonly></textarea>
+            </div>
+
+            <button class="w-full py-3 px-4 rounded-xl bg-neonGreen text-slate-950 font-bold text-sm hover:bg-green-500 transition flex items-center justify-center gap-2" onclick="enviarMensajePorWA()">
+              <i data-lucide="send" class="w-4 h-4"></i> Enviar a WhatsApp
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
+          <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300 mb-6">Álbum de Evidencias Fotográficas</h3>
+          <div id="galeria-fotos" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+        </div>
+      </section>
+
+      <!-- 4. FINANZAS -->
+      <section id="tab-finance" class="view-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-7 bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-neonPink"></div>
+            <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300 mb-4">Ingresos por Método de Pago</h3>
+            <div class="h-64 relative">
+              <canvas id="canvas-finance-chart"></canvas>
+            </div>
+            <div id="finance-promedio-box" class="mt-6 border-t border-slate-800 pt-4 text-xs space-y-1 text-slate-300"></div>
+          </div>
+
+          <div class="lg:col-span-5 bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col justify-between">
+            <div>
+              <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300 mb-2">Equipos Listos (Por Cobrar)</h3>
+              <p class="text-xs text-slate-400 mb-4">Lista de clientes con reparaciones aprobadas y saldo pendiente por abonar.</p>
+              <div id="ordenesXpagar" class="space-y-3 max-h-52 overflow-y-auto pr-2"></div>
+            </div>
+            <div class="pt-6">
+              <button class="w-full py-2.5 px-4 rounded-xl bg-neonCyan text-slate-950 font-bold text-sm hover:bg-cyan-400 transition flex items-center justify-center gap-2" onclick="enviarPorEmail()">
+                <i data-lucide="mail" class="w-4 h-4"></i> Exportar Resumen a Correo
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. CONFIGURACIÓN -->
+      <section id="tab-config" class="view-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Datos Corporativos -->
+          <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl relative overflow-hidden space-y-4">
+            <div class="absolute top-0 left-0 w-1 h-full bg-neonGreen"></div>
+            <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">Perfil Comercial del Taller</h3>
+            
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Nombre de la Empresa</label>
+                <input type="text" id="emp-nombre" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. Servicio Técnico AyC">
+              </div>
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Dirección del Local</label>
+                <input type="text" id="emp-dir" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. Avenida Principal N° 45">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Teléfono de Contacto</label>
+                  <input type="text" id="emp-tel" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. 6407-62-54">
+                </div>
+                <div>
+                  <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">ID Tributario (RUT / NIT)</label>
+                  <input type="text" id="emp-nit" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. RUT 12.345-678-9">
+                </div>
+              </div>
+            </div>
+            <button class="w-full py-2.5 px-4 rounded-xl bg-neonGreen text-slate-950 font-bold text-sm hover:bg-green-500 transition" onclick="guardarEmpresa()">Guardar Datos de Empresa</button>
+          </div>
+
+          <!-- Parámetros de Taller y Enlace Remoto -->
+          <div class="space-y-6">
+            <!-- ENLACE COMPARTIDO INSTANTÁNEO -->
+            <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl relative overflow-hidden space-y-4">
+              <div class="absolute top-0 left-0 w-1 h-full bg-neonCyan"></div>
+              <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">🔗 Enlace Rápido de Dispositivos</h3>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Usa este panel para copiar la configuración activa y pegarla en cualquier otro celular o computadora. Así, verán exactamente los mismos datos en tiempo real.
+              </p>
+              
+              <!-- DISPOSITIVO 1: OBTENER CÓDIGO -->
+              <div class="space-y-2">
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider">Tu Código de Sincronización Activo</label>
+                <div class="flex gap-2">
+                  <input type="text" id="share-sync-code" class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg py-2 px-3 text-xs font-mono text-neonCyan outline-none" readonly>
+                  <button class="px-4 py-2 text-xs font-bold rounded-lg bg-neonCyan/10 border border-neonCyan/40 text-neonCyan hover:bg-neonCyan hover:text-slate-950 transition" onclick="copySyncCode()">Copiar Código</button>
+                </div>
+              </div>
+
+              <div class="border-t border-slate-800/60 pt-4 space-y-2">
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider">Vincular un Nuevo Dispositivo</label>
+                <p class="text-[10px] text-slate-500 leading-normal mb-2">Pega aquí el código que copiaste del otro dispositivo y presiona Vincular.</p>
+                <div class="flex gap-2">
+                  <input type="text" id="paste-sync-code" class="flex-1 bg-slate-950/60 border border-slate-800 rounded-lg py-2 px-3 text-xs font-mono text-white outline-none" placeholder="Pega el código aquí...">
+                  <button class="px-4 py-2 text-xs font-bold rounded-lg bg-neonGreen text-slate-950 hover:bg-green-500 transition" onclick="linkSyncDevice()">Vincular</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parámetros de Taller -->
+            <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
+              <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">Parámetros de Alerta de Demora</h3>
+              
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Alerta Preventiva (Días)</label>
+                  <input type="number" id="dias-alerta" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" min="1" max="30" onchange="actualizarParametroTaller('dias_alerta', this.value)">
+                </div>
+                <div>
+                  <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Alerta Crítica (Días)</label>
+                  <input type="number" id="dias-urgente" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" min="1" max="60" onchange="actualizarParametroTaller('dias_urgente', this.value)">
+                </div>
+              </div>
+
+              <div class="border-t border-slate-800/80 pt-6 flex gap-3">
+                <button class="flex-1 py-2.5 px-4 rounded-xl bg-neonCyan/10 border border-neonCyan/30 text-neonCyan font-bold text-sm hover:bg-cyan-950 transition flex items-center justify-center gap-2" onclick="reforzarSincronia()">
+                  <i data-lucide="refresh-cw" class="w-4 h-4"></i> Forzar Refresco
+                </button>
+                <button class="flex-1 py-2.5 px-4 rounded-xl bg-neonPink/10 border border-neonPink/30 text-neonPink font-bold text-sm hover:bg-neonPink hover:text-slate-950 transition flex items-center justify-center gap-2" onclick="confirmarRestablecimiento()">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i> Limpiar Datos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- IMPRESIÓN OFICIAL TÉRMICA / CARTA -->
+  <div id="printable-receipt" class="hidden font-sans p-6 text-black max-w-4xl mx-auto">
+    <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-4">
+      <div>
+        <h1 class="text-2xl font-bold font-orbitron" id="print-header-brand-name">VARIEDADES AYC</h1>
+        <p class="text-xs" id="print-header-nit"></p>
+        <p class="text-xs" id="print-header-address"></p>
+        <p class="text-xs" id="print-header-phone"></p>
+      </div>
+      <div>
+        <img src="image.png" class="w-20 h-20 rounded-full object-cover border-2 border-black" alt="Logo" onerror="showFallbackLogo(this)">
+      </div>
+    </div>
+
+    <div class="text-center mb-6">
+      <h2 class="text-lg font-bold uppercase tracking-wider border-b border-dashed border-black inline-block pb-1">Orden de Servicio Técnico</h2>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 text-xs mb-6">
+      <div class="border border-black p-4 rounded-lg bg-slate-50">
+        <h3 class="font-bold border-b border-black pb-1 mb-2 uppercase">Datos de Servicio</h3>
+        <p><strong>N° Orden:</strong> <span id="print-order-num" class="text-sm font-bold"></span></p>
+        <p><strong>Ingreso:</strong> <span id="print-order-date"></span></p>
+        <p><strong>Fecha Límite Retiro (30 días):</strong> <span id="print-order-deadline" class="font-bold text-red-600 text-sm"></span></p>
+        <p><strong>Estado del Equipo:</strong> <span id="print-order-status" class="font-bold uppercase"></span></p>
+      </div>
+      <div class="border border-black p-4 rounded-lg bg-slate-50">
+        <h3 class="font-bold border-b border-black pb-1 mb-2 uppercase">Datos del Cliente</h3>
+        <p><strong>Cliente:</strong> <span id="print-client-name" class="font-bold"></span></p>
+        <p><strong>Teléfono:</strong> <span id="print-client-phone"></span></p>
+        <p><strong>Dispositivo:</strong> <span id="print-device-name" class="font-semibold"></span></p>
+      </div>
+    </div>
+
+    <div class="border border-black p-4 rounded-lg text-xs mb-6 bg-slate-50">
+      <h3 class="font-bold border-b border-black pb-1 mb-2 uppercase">Observaciones y Diagnóstico Técnico</h3>
+      <p id="print-obs-diagnostico" class="mb-4 leading-relaxed"></p>
+      <div class="flex justify-between border-t border-dashed border-gray-400 pt-2 text-sm font-semibold">
+        <p>Forma de Pago: <span id="print-pay-method"></span></p>
+        <p>Presupuesto Estimado: <span id="print-budget-val" class="font-bold text-base"></span></p>
+      </div>
+    </div>
+
+    <div class="border-2 border-red-600 bg-red-50 p-4 rounded-lg text-[9px] text-justify leading-relaxed text-red-950 mb-10">
+      <h4 class="font-bold text-red-700 uppercase mb-1 text-[10px]">⚠️ Términos, Condiciones y Cláusula de Abandono (30 días)</h4>
+      El cliente declara estar en pleno conocimiento y de acuerdo con que dispone de un plazo límite máximo de **30 días calendario** para retirar su equipo del taller técnico, computado desde la fecha de ingreso establecida en este documento o desde la fecha de notificación formal de finalización de trabajo. **Transcurrido el período indicado de 30 días sin que el dispositivo haya sido reclamado y retirado, este se considerará legalmente ABANDONADO, autorizando expresa, plena e irrevocablemente a Variedades AyC a disponer del mismo** para reciclaje, venta de componentes o destrucción, con el fin de resarcir el costo técnico de diagnóstico, mano de obra especializada y almacenamiento, sin responsabilidad alguna de indemnización o reposición de equipo para el propietario.
+    </div>
+
+    <div class="flex justify-between mt-12 px-6 text-xs">
+      <div class="text-center w-48">
+        <div class="border-b border-black h-8 mb-2"></div>
+        <p class="font-bold">Firma Autorizada Técnico</p>
+        <p class="text-[9px] text-gray-600">Variedades AyC</p>
+      </div>
+      <div class="text-center w-48">
+        <div class="border-b border-black h-8 mb-2"></div>
+        <p class="font-bold">Firma de Aceptación Cliente</p>
+        <p class="text-[9px] text-gray-600">Acepto los términos de servicio</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMULARIO MODAL -->
+  <div id="modal-editar-orden" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
+        <h3 id="modal-titulo" class="font-orbitron font-extrabold tracking-wider text-slate-200">Orden de Servicio Técnico</h3>
+        <button class="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition" onclick="cerrarModalOrden()">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <form id="form-orden-trabajo" onsubmit="procesarFormularioOrden(event)" class="space-y-4">
+        <input type="hidden" id="form-edit-idx">
+        
+        <div>
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Número de Orden</label>
+          <input type="number" id="form-numero" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" required placeholder="Ej. 1004">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Nombre de Cliente</label>
+            <input type="text" id="form-nombre" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" required placeholder="Juan Pérez">
+          </div>
+          <div>
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">WhatsApp / Teléfono</label>
+            <input type="text" id="form-telefono" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. 56912345678">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Modelo del Dispositivo</label>
+          <input type="text" id="form-dispositivo" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" required placeholder="Ej. PlayStation 5 Slim / iPhone 13 Pro">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Tipo de Presupuesto</label>
+            <select id="form-presupuesto-tipo" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer" onchange="togglePresupuestoField()">
+              <option value="monto">Digitar Monto (Colones ₡)</option>
+              <option value="pendiente">Pendiente de cotización</option>
+            </select>
+          </div>
+          <div id="form-presupuesto-monto-group">
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Monto (₡)</label>
+            <input type="number" id="form-presupuesto" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ingresar cantidad en colones">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Decisión del Cliente</label>
+            <select id="form-decision" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer">
+              <option value="SI">Aprobado para Reparar (SI)</option>
+              <option value="NO">Rechazado (NO)</option>
+              <option value="T">Pendiente en Taller (T)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Estado del Equipo</label>
+            <select id="form-estado" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer">
+              <option value="Pendiente">Pendiente</option>
+              <option value="Entregado">Entregado</option>
+              <option value="Sin solución">Sin solución</option>
+              <option value="Garantía">Garantía</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Método de Pago</label>
+          <select id="form-pago" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer">
+            <option value="EF">Efectivo (EF)</option>
+            <option value="TR">Transferencia Electrónica (TR)</option>
+            <option value="TD">Tarjeta Débito / Crédito (TD)</option>
+            <option value="PD">Pago Pendiente (PD)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Fallo Técnico u Observaciones de Ingreso</label>
+          <textarea id="form-obs" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-sm text-white focus:border-neonCyan outline-none h-20" placeholder="Ingresar descripción del daño físico u observaciones técnicas..."></textarea>
+        </div>
+
+        <div class="flex gap-3 justify-end pt-4 border-t border-slate-800">
+          <button type="button" class="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 font-semibold text-slate-300 transition" onclick="cerrarModalOrden()">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-xs rounded-lg bg-neonCyan text-slate-950 font-bold transition shadow-lg shadow-neonCyan/20">Guardar Datos</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SCRIPT 1: INTERFAZ DE USUARIO COMPLETA E INDEPENDIENTE -->
+  <script>
+    // --- ESTADO LOCAL SEGURO ---
+    function cfg(key, val) {
+      if (val !== undefined) {
+        localStorage.setItem('ayc_system_' + key, JSON.stringify(val));
+        return val;
+      }
+      const data = localStorage.getItem('ayc_system_' + key);
+      return data ? JSON.parse(data) : null;
+    }
+
+    let todasOrdenes = cfg('ordenes') || [
+      { numero: "1001", nombre: "Mario Gómez", telefono: "64076254", dispositivo: "Samsung S21", presupuesto: 45000, decision: "SI", pago: "EF", obs: "Cambio de pantalla táctil.", fecha: new Date().toISOString(), estado: "Entregado" },
+      { numero: "1002", nombre: "Catalina Soto", telefono: "88888888", dispositivo: "MacBook Air", presupuesto: "Pendiente", decision: "T", pago: "PD", obs: "No enciende después de mojarse.", fecha: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(), estado: "Pendiente" },
+      { numero: "1003", nombre: "Roberto Diaz", telefono: "77777777", dispositivo: "iPad Pro", presupuesto: 85000, decision: "SI", pago: "TR", obs: "Pin de carga sulfatado.", fecha: new Date().toISOString(), estado: "Garantía" }
+    ];
+
+    let firmasClientes = cfg('firmas') || [];
+    let albumFotos = cfg('fotos') || [];
+    let isCloudActive = false;
+    let chartFinanciero = null;
+    let fotoTemporalBase64 = null;
+    let canvas, ctxCanvas, drawing = false;
+
+    // --- ACCESO OPERADOR ---
+    function checkLoginKey(e) {
+      if (e.key === 'Enter') procesarLogin();
+    }
+
+    function procesarLogin() {
+      const field = document.getElementById('login-password-field');
+      if (!field) return;
+
+      if (field.value === "1234") {
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-main-view').classList.remove('hidden');
+        toast("🔓 Acceso Correcto. ¡Sistema cargado con éxito!", "green");
+        renderHistorial();
+      } else {
+        toast("❌ Contraseña incorrecta. Inténtelo de nuevo.", "pink");
+        field.value = "";
+        field.focus();
+      }
+    }
+
+    // --- MANEJO DE PESTAÑAS (SPA) ---
+    function changeTab(panelId) {
+      document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('text-neonCyan', 'border-neonCyan', 'bg-neonCyan/5');
+        btn.classList.add('text-slate-400', 'border-transparent');
+      });
+
+      const activePanel = document.getElementById(panelId);
+      if (activePanel) activePanel.classList.remove('hidden');
+
+      const triggerBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(panelId));
+      if (triggerBtn) {
+        triggerBtn.classList.add('text-neonCyan', 'border-neonCyan', 'bg-neonCyan/5');
+        triggerBtn.classList.remove('text-slate-400', 'border-transparent');
+      }
+
+      if (panelId === 'tab-signatures') {
+        setTimeout(() => {
+          inicCanvas();
+          renderFirmas();
+        }, 100);
+      }
+      if (panelId === 'tab-multimedia') {
+        cargarSelectsMultimedia();
+        renderGaleriaFotos();
+      }
+      if (panelId === 'tab-finance') {
+        renderFinanzas();
+      }
+      safeInitIcons();
+    }
+
+    // --- MODALES DE CONFIRMACIÓN INTERNOS ---
+    let pendingConfirmCallback = null;
+    function customConfirm(message, callback) {
+      document.getElementById('confirm-message').textContent = message;
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      pendingConfirmCallback = callback;
+    }
+
+    function closeConfirm(result) {
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      if (result && pendingConfirmCallback) {
+        pendingConfirmCallback();
+      }
+      pendingConfirmCallback = null;
+    }
+
+    // --- ACCIÓN MODALES DE FORMULARIO ---
+    function cerrarModalOrden() {
+      document.getElementById('modal-editar-orden').classList.add('hidden');
+      document.getElementById('modal-editar-orden').classList.remove('flex');
+    }
+
+    function togglePresupuestoField() {
+      const tipo = document.getElementById('form-presupuesto-tipo').value;
+      const group = document.getElementById('form-presupuesto-monto-group');
+      const input = document.getElementById('form-presupuesto');
+      if (tipo === 'pendiente') {
+        group.classList.add('hidden');
+        input.removeAttribute('required');
+      } else {
+        group.classList.remove('hidden');
+        input.setAttribute('required', 'required');
+      }
+    }
+
+    // --- FUNCIONES CRUD FORMULARIO ---
+    function crearNuevaOrden() {
+      document.getElementById('form-orden-trabajo').reset();
+      document.getElementById('form-edit-idx').value = '';
+      
+      // Auto-generar número correlativo sugerido
+      let maxNum = 1000;
+      todasOrdenes.forEach(o => {
+        let n = parseInt(o.numero);
+        if (n > maxNum) maxNum = n;
+      });
+      document.getElementById('form-numero').value = maxNum + 1;
+      document.getElementById('modal-titulo').textContent = "Nueva Orden de Trabajo";
+      document.getElementById('form-presupuesto-tipo').value = 'monto';
+      togglePresupuestoField();
+
+      const modal = document.getElementById('modal-editar-orden');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function editarOrdenPorIndice(idx) {
+      const o = todasOrdenes[idx];
+      if (!o) return;
+
+      document.getElementById('form-edit-idx').value = idx;
+      document.getElementById('form-numero').value = o.numero;
+      document.getElementById('form-nombre').value = o.nombre;
+      document.getElementById('form-telefono').value = o.telefono || '';
+      document.getElementById('form-dispositivo').value = o.dispositivo;
+      
+      if (o.presupuesto === 'Pendiente') {
+        document.getElementById('form-presupuesto-tipo').value = 'pendiente';
+        document.getElementById('form-presupuesto').value = '';
+      } else {
+        document.getElementById('form-presupuesto-tipo').value = 'monto';
+        document.getElementById('form-presupuesto').value = o.presupuesto;
+      }
+      togglePresupuestoField();
+
+      document.getElementById('form-decision').value = o.decision;
+      document.getElementById('form-estado').value = o.estado || 'Pendiente';
+      document.getElementById('form-pago').value = o.pago;
+      document.getElementById('form-obs').value = o.obs || '';
+
+      document.getElementById('modal-titulo').textContent = `Editar Orden N° ${o.numero}`;
+      const modal = document.getElementById('modal-editar-orden');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // --- RENDERS ---
+    function renderHistorial() {
+      const searchVal = document.getElementById('inp-search').value.toLowerCase();
+      const filterEstado = document.getElementById('filter-estado').value;
+      const body = document.getElementById('tabla-ordenes-body');
+      if (!body) return;
+
+      const filtradas = todasOrdenes.filter(o => {
+        const matchesSearch = o.nombre.toLowerCase().includes(searchVal) || 
+                              o.dispositivo.toLowerCase().includes(searchVal) || 
+                              o.numero.toString().includes(searchVal);
+        
+        const matchesEstado = (filterEstado === 'TODOS' || o.estado === filterEstado);
+        return matchesSearch && matchesEstado;
+      });
+
+      document.getElementById('row-count').textContent = `${filtradas.length} Orden${filtradas.length === 1 ? '' : 'es'}`;
+
+      if (filtradas.length === 0) {
+        body.innerHTML = `<tr><td colspan="9" class="px-6 py-10 text-center text-slate-500 font-semibold">No se encontraron órdenes registradas para esta selección</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = filtradas.map((o) => {
+        let badgeType = 'border-neonCyan/30 text-neonCyan bg-neonCyan/5';
+        let decisionLabel = 'Taller (T)';
+        if (o.decision === 'SI') { badgeType = 'border-neonGreen/30 text-neonGreen bg-neonGreen/5'; decisionLabel = 'Aprobado'; }
+        if (o.decision === 'NO') { badgeType = 'border-neonPink/30 text-neonPink bg-neonPink/5'; decisionLabel = 'Rechazado'; }
+
+        const estadoActual = o.estado || "Pendiente";
+        let statusBadgeClass = 'border-neonYellow/30 text-neonYellow bg-neonYellow/5';
+        if (estadoActual === 'Entregado') statusBadgeClass = 'border-neonGreen/30 text-neonGreen bg-neonGreen/5';
+        if (estadoActual === 'Sin solución') statusBadgeClass = 'border-neonPink/30 text-neonPink bg-neonPink/5';
+        if (estadoActual === 'Garantía') statusBadgeClass = 'border-neonPurple/30 text-neonPurple bg-neonPurple/5';
+
+        let presDisplay = o.presupuesto === "Pendiente" ? "Pendiente" : `₡${parseInt(o.presupuesto || 0).toLocaleString()}`;
+
+        return `
+          <tr class="hover:bg-slate-800/20 transition-all duration-200">
+            <td class="px-6 py-4 font-orbitron font-extrabold text-neonCyan">${o.numero}</td>
+            <td class="px-6 py-4 font-semibold text-slate-200">${o.nombre}</td>
+            <td class="px-6 py-4 text-slate-400 text-xs">${o.dispositivo}</td>
+            <td class="px-6 py-4 font-bold text-white text-xs">${presDisplay}</td>
+            <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border ${badgeType}">${decisionLabel}</span></td>
+            <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border ${statusBadgeClass}">${estadoActual}</span></td>
+            <td class="px-6 py-4 text-xs font-semibold text-slate-400">${o.pago}</td>
+            <td class="px-6 py-4 text-xs text-slate-500">${o.fecha ? new Date(o.fecha).toLocaleDateString() : '---'}</td>
+            <td class="px-6 py-4 text-right">
+              <div class="inline-flex gap-2">
+                <button class="px-2.5 py-1.5 rounded-lg border border-neonCyan/30 text-neonCyan hover:bg-neonCyan/20 transition text-xs font-bold" onclick="generarPDFOrden('${o.numero}')">PDF</button>
+                <button class="px-2.5 py-1.5 rounded-lg border border-neonGreen/30 text-neonGreen hover:bg-neonGreen/20 transition text-xs font-bold" onclick="imprimirBoletaOrden('${o.numero}')">Imprimir</button>
+                <button class="px-2.5 py-1.5 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-300 transition text-xs font-bold" onclick="editarOrdenPorIndice(${todasOrdenes.indexOf(o)})">Editar</button>
+                <button class="px-2.5 py-1.5 rounded-lg border border-neonPink/30 text-neonPink hover:bg-neonPink/20 transition text-xs font-bold" onclick="eliminarOrdenPorIndice(${todasOrdenes.indexOf(o)})">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      revisarOrdenesRetrasadas();
+      safeInitIcons();
+    }
+
+    function renderFirmas() {
+      const body = document.getElementById('tabla-firmas-body');
+      if (!body) return;
+
+      if (firmasClientes.length === 0) {
+        body.innerHTML = `<tr><td colspan="3" class="px-6 py-6 text-center text-slate-500 font-semibold">No se registran firmas autorizadas</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = firmasClientes.map(f => `
+        <tr class="hover:bg-slate-800/10 transition duration-200">
+          <td class="px-6 py-3">
+            <img src="${f.imagen}" class="h-10 bg-slate-950 border border-slate-800 rounded-lg p-1 px-4 object-contain" />
+          </td>
+          <td class="px-6 py-3">
+            <div class="font-bold text-slate-200 text-xs">Orden N° ${f.orden}</div>
+            <div class="text-[10px] text-slate-400">Firmante: ${f.nombre} (${f.fecha})</div>
+          </td>
+          <td class="px-6 py-3 text-right">
+            <button class="px-2 py-1 rounded bg-neonPink/10 text-neonPink hover:bg-neonPink hover:text-slate-950 font-bold text-[10px] transition uppercase tracking-wider" onclick="eliminarFirma('${f.id}')">Eliminar</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderGaleriaFotos() {
+      const g = document.getElementById('galeria-fotos');
+      if (!g) return;
+
+      if (albumFotos.length === 0) {
+        g.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs font-semibold">Sin evidencias fotográficas registradas</div>`;
+        return;
+      }
+
+      g.innerHTML = albumFotos.map(f => {
+        const ord = todasOrdenes.find(o => o.numero === f.orden);
+        const desc = ord ? `${ord.nombre} (${ord.dispositivo})` : 'Sin asignar';
+        return `
+          <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex flex-col justify-between">
+            <img src="${f.imagen}" class="w-full h-24 object-cover rounded-lg bg-black" alt="Evidencia">
+            <div class="mt-2.5 space-y-0.5 text-left">
+              <div class="text-[11px] font-bold text-neonCyan font-orbitron">Orden #${f.orden}</div>
+              <div class="text-[9px] text-slate-400 truncate">${desc}</div>
+            </div>
+            <button class="w-full mt-3 py-1 text-[9px] uppercase font-bold tracking-wider rounded bg-neonPink/10 text-neonPink hover:bg-neonPink hover:text-slate-950 transition" onclick="eliminarFoto('${f.id}')">Remover</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderFinanzas() {
+      const ctx = document.getElementById('canvas-finance-chart');
+      if (!ctx) return;
+
+      if (chartFinanciero) chartFinanciero.destroy();
+
+      const totalesMetodos = { 'Efectivo': 0, 'Transferencia': 0, 'Tarjeta': 0, 'Pendiente': 0 };
+      let totalIngreso = 0;
+      let totalAprobadas = 0;
+
+      todasOrdenes.forEach(o => {
+        if (o.decision === 'SI') {
+          const presVal = o.presupuesto === "Pendiente" ? 0 : (parseInt(o.presupuesto) || 0);
+          totalIngreso += presVal;
+          totalAprobadas++;
+
+          if (o.pago === 'EF') totalesMetodos['Efectivo'] += presVal;
+          else if (o.pago === 'TR') totalesMetodos['Transferencia'] += presVal;
+          else if (o.pago === 'TD') totalesMetodos['Tarjeta'] += presVal;
+          else totalesMetodos['Pendiente'] += presVal;
+        }
+      });
+
+      const promedio = totalAprobadas > 0 ? (totalIngreso / totalAprobadas) : 0;
+      document.getElementById('finance-promedio-box').innerHTML = `
+        <div class="flex justify-between py-1"><span>Total Ingresos Recaudados (SI):</span><span class="font-extrabold text-neonGreen">₡${totalIngreso.toLocaleString()}</span></div>
+        <div class="flex justify-between py-1"><span>Promedio por Orden:</span><span class="font-bold text-neonCyan">₡${parseInt(promedio).toLocaleString()}</span></div>
+      `;
+
+      chartFinanciero = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(totalesMetodos),
+          datasets: [{
+            data: Object.values(totalesMetodos),
+            backgroundColor: ['#39ff14', '#00f5ff', '#ff2d78', '#5a7a8a'],
+            borderColor: '#0b1329',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { color: '#e0eaf5', font: { family: 'Plus Jakarta Sans', size: 11 } }
+            }
+          }
+        }
+      });
+
+      renderCuentasPorPagar();
+    }
+
+    function renderCuentasPorPagar() {
+      const container = document.getElementById('ordenesXpagar');
+      if (!container) return;
+
+      const porCobrar = todasOrdenes.filter(o => o.decision === 'SI' && o.pago === 'PD');
+
+      if (porCobrar.length === 0) {
+        container.innerHTML = `<div class="text-slate-500 text-xs text-center py-6 font-semibold">Todas las órdenes aprobadas están al día.</div>`;
+        return;
+      }
+
+      container.innerHTML = porCobrar.map(o => {
+        const displayPres = o.presupuesto === "Pendiente" ? "Pendiente" : `₡${parseInt(o.presupuesto).toLocaleString()}`;
+        return `
+          <div class="bg-slate-950/60 border-l-4 border-neonPink p-3 rounded-lg flex justify-between items-center text-xs">
+            <div>
+              <div class="font-bold text-slate-200">#${o.numero} - ${o.nombre}</div>
+              <div class="text-[10px] text-slate-500">${o.dispositivo}</div>
+            </div>
+            <div class="text-neonPink font-extrabold">${displayPres}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- REVISIÓN DE RETRASOS EN TIEMPO REAL ---
+    function revisarOrdenesRetrasadas() {
+      const diasAlerta = parseInt(cfg('dias_alerta')) || 7;
+      const diasUrgente = parseInt(cfg('dias_urgente')) || 15;
+      const container = document.getElementById('alertas-retraso-container');
+      const box = document.getElementById('box-alertas-retraso');
+      
+      if (!container) return;
+      const hoy = new Date();
+      let htmlContent = '';
+
+      todasOrdenes.forEach(o => {
+        if (o.decision === 'T' && o.fecha && o.estado !== 'Entregado' && o.estado !== 'Sin solución') {
+          const diferenciaTiempo = Math.abs(hoy - new Date(o.fecha));
+          const diasTranscurridos = Math.ceil(diferenciaTiempo / (1000 * 60 * 60 * 24));
+
+          if (diasTranscurridos >= diasUrgente) {
+            htmlContent += `
+              <div class="p-3 rounded-lg bg-neonPink/10 border border-neonPink/20 text-xs text-pink-200 flex justify-between items-center">
+                <span>🚨 <strong>Urgencia Crítica:</strong> Orden N° ${o.numero} (${o.nombre}) para ${o.dispositivo} lleva <strong>${diasTranscurridos} días</strong> estancada.</span>
+                <span class="text-[10px] uppercase font-bold bg-neonPink/20 px-2 py-0.5 rounded text-neonPink">Alerta Crítica</span>
+              </div>
+            `;
+          } else if (diasTranscurridos >= diasAlerta) {
+            htmlContent += `
+              <div class="p-3 rounded-lg bg-neonYellow/10 border border-neonYellow/20 text-xs text-yellow-200 flex justify-between items-center">
+                <span>⚠️ <strong>Advertencia:</strong> Orden N° ${o.numero} (${o.nombre}) para ${o.dispositivo} lleva <strong>${diasTranscurridos} días</strong> en revisión.</span>
+                <span class="text-[10px] uppercase font-bold bg-neonYellow/20 px-2 py-0.5 rounded text-neonYellow">Preventiva</span>
+              </div>
+            `;
+          }
+        }
+      });
+
+      if (htmlContent) {
+        container.innerHTML = htmlContent;
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    // --- COPIADO DEL CÓDIGO DE SINCRONIZACIÓN ---
+    function copySyncCode() {
+      const codeInput = document.getElementById('share-sync-code');
+      if (codeInput && codeInput.value) {
+        try {
+          codeInput.select();
+          codeInput.setSelectionRange(0, 99999);
+          document.execCommand('copy');
+          toast("📋 Código copiado al portapapeles. Pégalo en tu otro dispositivo.", "green");
+        } catch (err) {
+          toast("❌ Error al copiar. Inténtelo seleccionando el texto manualmente.", "pink");
+        }
+      }
+    }
+
+    // --- VINCULACIÓN DE NUEVO DISPOSITIVO ---
+    function linkSyncDevice() {
+      const pasteInput = document.getElementById('paste-sync-code');
+      if (pasteInput && pasteInput.value.trim()) {
+        try {
+          const rawCode = pasteInput.value.trim();
+          const decoded = atob(rawCode); 
+          const parsed = JSON.parse(decoded);
+
+          if (parsed.c && parsed.a) {
+            cfg('linked_firebase_config_raw', JSON.stringify(parsed.c));
+            cfg('linked_app_id', parsed.a);
+            
+            toast("🔌 Sincronizando nuevo canal de datos. Reiniciando...", "cyan");
+            setTimeout(() => {
+              window.location.reload();
+            }, 1200);
+          } else {
+            throw new Error("Formato incorrecto");
+          }
+        } catch (e) {
+          toast("❌ Código de sincronización inválido o corrupto.", "pink");
+        }
+      } else {
+        toast("❌ Escribe o pega un código de sincronización válido.", "pink");
+      }
+    }
+
+    // --- CONFIGURACIÓN DE PARÁMETROS TALLER ---
+    function actualizarParametroTaller(key, val) {
+      cfg(key, val);
+      revisarOrdenesRetrasadas();
+      toast(`⚙️ Parámetro ${key.replace('_',' ')} actualizado.`, "cyan");
+    }
+
+    // --- CANVAS DE FIRMA DIGITAL ---
+    function inicCanvas() {
+      canvas = document.getElementById('canvas-firma');
+      if (!canvas) return;
+      ctxCanvas = canvas.getContext('2d');
+
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = 160;
+
+      ctxCanvas.strokeStyle = '#39ff14'; 
+      ctxCanvas.lineWidth = 3;
+      ctxCanvas.lineCap = 'round';
+
+      // Eventos Mouse
+      canvas.addEventListener('mousedown', (e) => {
+        drawing = true;
+        ctxCanvas.beginPath();
+        ctxCanvas.moveTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+      });
+      canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        ctxCanvas.lineTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+        ctxCanvas.stroke();
+      });
+      canvas.addEventListener('mouseup', () => drawing = false);
+
+      // Eventos Táctiles (Móviles)
+      canvas.addEventListener('touchstart', (e) => {
+        drawing = true;
+        const touch = e.touches[0];
+        ctxCanvas.beginPath();
+        ctxCanvas.moveTo(touch.clientX - canvas.getBoundingClientRect().left, touch.clientY - canvas.getBoundingClientRect().top);
+        e.preventDefault();
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        if (!drawing) return;
+        const touch = e.touches[0];
+        ctxCanvas.lineTo(touch.clientX - canvas.getBoundingClientRect().left, touch.clientY - canvas.getBoundingClientRect().top);
+        ctxCanvas.stroke();
+        e.preventDefault();
+      });
+      canvas.addEventListener('touchend', () => drawing = false);
+    }
+
+    function borrarFirma() {
+      if (ctxCanvas && canvas) {
+        ctxCanvas.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // --- PROCESAR FOTO DE MULTIMEDIA ---
+    function procesarArchivoImagen(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const lector = new FileReader();
+      lector.onload = function(e) {
+        fotoTemporalBase64 = e.target.result;
+        const previewImg = document.getElementById('img-recepcion-preview');
+        previewImg.src = fotoTemporalBase64;
+        previewImg.classList.remove('hidden');
+        document.getElementById('foto-vacio').style.display = 'none';
+        toast("📸 Imagen cargada con éxito en caché de taller", "green");
+      };
+      lector.readAsDataURL(file);
+    }
+
+    // --- ENVIAR NOTIFICACIÓN WHATSAPP ---
+    function enviarMensajePorWA() {
+      const previewText = document.getElementById('wa-preview').value;
+      const oNum = document.getElementById('wa-orden').value;
+      const o = todasOrdenes.find(item => item.numero === oNum);
+
+      if (!o || !o.telefono) {
+        toast("❌ La orden seleccionada no tiene un número telefónico asignado.", "pink");
+        return;
+      }
+
+      const telLimpio = o.telefono.replace(/\D/g, '');
+      const url = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(previewText)}`;
+      window.open(url, '_blank');
+      toast("📱 Redirigiendo a WhatsApp Web...", "green");
+    }
+
+    // --- EXPORTAR CSV ---
+    function exportarCSV() {
+      if (todasOrdenes.length === 0) {
+        toast("❌ No hay órdenes para exportar", "pink");
+        return;
+      }
+
+      let csv = "Numero,Cliente,Telefono,Dispositivo,Presupuesto,Decision,Estado,MetodoPago,FechaIngreso,Observaciones\r\n";
+      todasOrdenes.forEach(o => {
+        csv += `"${o.numero}","${o.nombre}","${o.telefono || ''}","${o.dispositivo}","${o.presupuesto}","${o.decision}","${o.estado || 'Pendiente'}","${o.pago}","${o.fecha}","${(o.obs || '').replace(/"/g, '""')}"\r\n`;
+      });
+
+      const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `ayc_export_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast("📊 Reporte CSV descargado con éxito.", "green");
+    }
+
+    // --- ENVIAR RESUMEN POR EMAIL ---
+    function enviarPorEmail() {
+      const emp = cfg('empresa') || { nombre: "AyC Servicios", tel: "6407-62-54" };
+      let bodyText = `Resumen Financiero del Taller - ${emp.nombre}\n`;
+      bodyText += `Fecha: ${new Date().toLocaleDateString()}\n\n`;
+
+      let total = 0;
+      todasOrdenes.forEach(o => {
+        if (o.decision === 'SI') {
+          const pres = o.presupuesto === 'Pendiente' ? 0 : (parseInt(o.presupuesto) || 0);
+          bodyText += `Orden N° ${o.numero} - ${o.nombre} (${o.dispositivo}): ₡${pres.toLocaleString()}\n`;
+          total += pres;
+        }
+      });
+      bodyText += `\nTotal Recaudado Estimado: ₡${total.toLocaleString()}`;
+
+      const mailto = `mailto:?subject=Resumen%20Financiero%2520AyC&body=${encodeURIComponent(bodyText)}`;
+      window.open(mailto, '_blank');
+      toast("✉️ Generando plantilla de correo...", "cyan");
+    }
+
+    // --- IMPRIMIR BOLETA EN PAPEL TÉRMICO / CARTA ---
+    function imprimirBoletaOrden(num) {
+      const o = todasOrdenes.find(item => item.numero === num);
+      if (!o) return;
+
+      const emp = cfg('empresa') || { nombre: "VARIEDADES AYC", nit: "RUT 12.345.678-9", dir: "Ventas y Servicio Técnico", tel: "6407-62-54" };
+
+      document.getElementById('print-header-brand-name').textContent = emp.nombre.toUpperCase();
+      document.getElementById('print-header-nit').textContent = emp.nit;
+      document.getElementById('print-header-address').textContent = emp.dir;
+      document.getElementById('print-header-phone').textContent = "Tel: " + emp.tel;
+
+      document.getElementById('print-order-num').textContent = o.numero;
+      document.getElementById('print-order-date').textContent = o.fecha ? new Date(o.fecha).toLocaleDateString() : '---';
+      
+      const limite = o.fecha ? new Date(new Date(o.fecha).getTime() + 30 * 24 * 60 * 60 * 1000) : new Date();
+      document.getElementById('print-order-deadline').textContent = limite.toLocaleDateString();
+      document.getElementById('print-order-status').textContent = o.estado || 'Pendiente';
+
+      document.getElementById('print-client-name').textContent = o.nombre;
+      document.getElementById('print-client-phone').textContent = o.telefono || 'Sin registrar';
+      document.getElementById('print-device-name').textContent = o.dispositivo;
+
+      document.getElementById('print-obs-diagnostico').textContent = o.obs || 'Sin observaciones registradas durante la recepción técnica.';
+      
+      let metPago = "Pago Pendiente (PD)";
+      if (o.pago === 'EF') metPago = "Efectivo (EF)";
+      else if (o.pago === 'TR') metPago = "Transferencia (TR)";
+      else if (o.pago === 'TD') metPago = "Tarjeta Débito/Crédito (TD)";
+      
+      document.getElementById('print-pay-method').textContent = metPago;
+      document.getElementById('print-budget-val').textContent = o.presupuesto === 'Pendiente' ? 'Pendiente' : `₡${parseInt(o.presupuesto).toLocaleString()}`;
+
+      window.print();
+    }
+
+    // --- RESTAURADO: GENERAR PDF CON DISEÑO ORIGINAL CLÁSICO ---
+    function generarPDFOrden(num) {
+      const o = todasOrdenes.find(item => item.numero === num);
+      if (!o) return;
+
+      const emp = cfg('empresa') || { nombre: "VARIEDADES AYC", nit: "RUT 12.345.678-9", dir: "Ventas y Servicio Técnico", tel: "6407-62-54" };
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Encabezado Clásico Limpio
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(0, 0, 0);
+      doc.text(emp.nombre.toUpperCase(), 14, 20);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(`ID/NIT: ${emp.nit}`, 14, 26);
+      doc.text(`Dirección: ${emp.dir}`, 14, 31);
+      doc.text(`Teléfono: ${emp.tel}`, 14, 36);
+
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.line(14, 40, 196, 40);
+
+      // Título de Orden
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text(`ORDEN DE SERVICIO TÉCNICO N° ${o.numero}`, 14, 49);
+
+      // Tabla de Datos
+      doc.setFontSize(10);
+      doc.text("DATOS DEL CLIENTE Y EQUIPO", 14, 58);
+      doc.line(14, 60, 196, 60);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`Cliente: ${o.nombre}`, 14, 66);
+      doc.text(`Teléfono: ${o.telefono || 'Sin registrar'}`, 14, 71);
+      doc.text(`Dispositivo: ${o.dispositivo}`, 14, 76);
+      doc.text(`Fecha de Ingreso: ${o.fecha ? new Date(o.fecha).toLocaleDateString() : '---'}`, 14, 81);
+
+      // Bloque de Pago y Monto
+      let presDisplay = o.presupuesto === "Pendiente" ? "Pendiente" : `₡${parseInt(o.presupuesto || 0).toLocaleString()}`;
+      let metPago = o.pago;
+      if (o.pago === 'EF') metPago = "Efectivo (EF)";
+      else if (o.pago === 'TR') metPago = "Transferencia (TR)";
+      else if (o.pago === 'TD') metPago = "Tarjeta (TD)";
+      else if (o.pago === 'PD') metPago = "Pago Pendiente (PD)";
+
+      doc.setFont("helvetica", "bold");
+      doc.text("DETALLES DE PAGO", 110, 58);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Presupuesto: ${presDisplay}`, 110, 66);
+      doc.text(`Método de Pago: ${metPago}`, 110, 71);
+      doc.text(`Estado actual: ${o.estado || 'Pendiente'}`, 110, 76);
+      doc.text(`Decisión: ${o.decision === 'SI' ? 'Aprobado' : o.decision === 'NO' ? 'Rechazado' : 'Pendiente'}`, 110, 81);
+
+      // Seccion Observaciones
+      doc.setFont("helvetica", "bold");
+      doc.text("DIAGNÓSTICO / OBSERVACIONES", 14, 91);
+      doc.line(14, 93, 196, 93);
+      doc.setFont("helvetica", "normal");
+      const splitObs = doc.splitTextToSize(o.obs || "Sin observaciones específicas detalladas durante el ingreso del equipo.", 180);
+      doc.text(splitObs, 14, 99);
+
+      // Clausula de Abandono
+      const obsHeight = splitObs.length * 5;
+      const clausulaY = 99 + obsHeight + 8;
+      doc.setDrawColor(220, 38, 38);
+      doc.setFillColor(254, 242, 242);
+      doc.rect(14, clausulaY, 182, 33, 'FD');
+
+      doc.setTextColor(185, 28, 28);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("TÉRMINOS Y CLÁUSULA DE ABANDONO (LÍMITE 30 DÍAS)", 18, clausulaY + 6);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      const clausulaText = "El cliente declara estar en pleno conocimiento y de acuerdo con que dispone de un plazo límite máximo de 30 días calendario para retirar su equipo del taller técnico, computado desde la fecha de ingreso establecida en este documento o desde la fecha de notificación formal de finalización de trabajo. Transcurrido el período indicado de 30 días sin que el dispositivo haya sido reclamado y retirado, este se considerará legalmente ABANDONADO, autorizando expresa, plena e irrevocablemente a Variedades AyC a disponer del mismo para reciclaje, venta de componentes o destrucción.";
+      const splitClausula = doc.splitTextToSize(clausulaText, 174);
+      doc.text(splitClausula, 18, clausulaY + 12);
+
+      // Firmas al pie
+      const signatureY = clausulaY + 50;
+      doc.setDrawColor(150, 150, 150);
+      doc.setLineWidth(0.5);
+      doc.line(20, signatureY, 80, signatureY);
+      doc.line(130, signatureY, 190, signatureY);
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("Firma Autorizada Técnico", 31, signatureY + 5);
+      doc.text("Firma de Aceptación Cliente", 139, signatureY + 5);
+
+      // Cargar firma si existe en sistema
+      const firmaCliente = firmasClientes.find(f => f.orden === o.numero);
+      if (firmaCliente) {
+        try {
+          doc.addImage(firmaCliente.imagen, 'PNG', 140, signatureY - 18, 40, 15);
+        } catch(err) {
+          console.warn("No se pudo cargar la firma en el PDF", err);
+        }
+      }
+
+      doc.save(`Orden_${o.numero}_AyC.pdf`);
+      toast(`📄 PDF de Orden N° ${o.numero} generado con éxito`, "green");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const emp = cfg('empresa') || {};
+      if (emp.nombre) document.getElementById('emp-nombre').value = emp.nombre;
+      if (emp.dir) document.getElementById('emp-dir').value = emp.dir;
+      if (emp.tel) document.getElementById('emp-tel').value = emp.tel;
+      if (emp.nit) document.getElementById('emp-nit').value = emp.nit;
+
+      document.getElementById('dias-alerta').value = cfg('dias_alerta') || 7;
+      document.getElementById('dias-urgente').value = cfg('dias_urgente') || 15;
+
+      // Cargar código de sincronización guardado en caché para visualización instantánea
+      const cachedCode = cfg('cached_sync_code');
+      if (cachedCode) {
+        const codeElement = document.getElementById('share-sync-code');
+        if (codeElement) {
+          codeElement.value = cachedCode;
+        }
+      }
+
+      renderHistorial();
+      safeInitIcons();
+    });
+
+    // Mapeos globales necesarios
+    window.crearNuevaOrden = crearNuevaOrden;
+    window.editarOrdenPorIndice = editarOrdenPorIndice;
+    window.changeTab = changeTab;
+    window.procesarLogin = procesarLogin;
+    window.checkLoginKey = checkLoginKey;
+    window.borrarFirma = borrarFirma;
+    window.procesarArchivoImagen = procesarArchivoImagen;
+    window.enviarMensajePorWA = enviarMensajePorWA;
+    window.exportarCSV = exportarCSV;
+    window.enviarPorEmail = enviarPorEmail;
+    window.imprimirBoletaOrden = imprimirBoletaOrden;
+    window.generarPDFOrden = generarPDFOrden;
+    window.actualizarParametroTaller = actualizarParametroTaller;
+    window.closeConfirm = closeConfirm;
+    window.cerrarModalOrden = cerrarModalOrden;
+    window.togglePresupuestoField = togglePresupuestoField;
+    window.renderHistorial = renderHistorial;
+    window.generarMensajeNotif = generarMensajeNotif;
+  </script>
+
+  <!-- SCRIPT 2: CONEXIÓN EN TIEMPO REAL CON LA NUBE (FIREBASE CON ENLACE) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    let db = null;
+    let auth = null;
+    let appId = 'ayc-sistema-gestion';
+
+    const driveDot = document.getElementById('drive-dot');
+    const drivePing = document.getElementById('drive-ping');
+    const driveText = document.getElementById('drive-text');
+
+    const initFirebase = async () => {
+      try {
+        let config = null;
+
+        // 1. Prioritario: Comprobar si hay un enlace compartido guardado en el dispositivo
+        const linkedConfigRaw = cfg('linked_firebase_config_raw');
+        if (linkedConfigRaw) {
+          config = JSON.parse(linkedConfigRaw);
+          appId = cfg('linked_app_id') || 'ayc-sistema-gestion';
+        }
+
+        // 2. Si no hay enlace, usar la configuración automática del entorno local
+        if (!config && typeof __firebase_config !== 'undefined' && __firebase_config) {
+          config = JSON.parse(__firebase_config);
+          appId = typeof __app_id !== 'undefined' ? __app_id : 'ayc-sistema-gestion';
+        }
+
+        // --- CORRECCIÓN: Generar el código de sincronización INMEDIATAMENTE de manera local ---
+        if (config) {
+          const payload = { c: config, a: appId };
+          const encodedPayload = btoa(JSON.stringify(payload));
+          const codeElement = document.getElementById('share-sync-code');
+          if (codeElement) {
+            codeElement.value = encodedPayload;
+          }
+          cfg('cached_sync_code', encodedPayload); // Respaldar en caché persistente del dispositivo
+        }
+
+        if (config) {
+          const app = initializeApp(config);
+          auth = getAuth(app);
+          db = getFirestore(app);
+
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              isCloudActive = true;
+              actualizarUIDrive(true);
+              conectarBaseDatosNube();
+            } else {
+              isCloudActive = false;
+              actualizarUIDrive(false);
+            }
+          });
+        } else {
+          isCloudActive = false;
+          actualizarUIDrive(false);
+        }
+      } catch (e) {
+        console.warn("Nube inactiva. Almacenamiento local de resguardo activado.", e);
+        isCloudActive = false;
+        actualizarUIDrive(false);
+      }
+    };
+
+    function conectarBaseDatosNube() {
+      if (!db) return;
+
+      const qOrdenes = collection(db, 'artifacts', appId, 'public', 'data', 'ordenes');
+      onSnapshot(qOrdenes, (snapshot) => {
+        let tempOrdenes = [];
+        snapshot.forEach((doc) => {
+          tempOrdenes.push({ firestoreId: doc.id, ...doc.data() });
+        });
+        if (tempOrdenes.length > 0) {
+          todasOrdenes = tempOrdenes;
+          todasOrdenes.sort((a, b) => parseInt(b.numero) - parseInt(a.numero));
+          cfg('ordenes', todasOrdenes);
+          renderHistorial();
+          actualizarPanelesActivos();
+        }
+      }, (e) => console.error(e));
+
+      const qFirmas = collection(db, 'artifacts', appId, 'public', 'data', 'firmas');
+      onSnapshot(qFirmas, (snapshot) => {
+        let tempFirmas = [];
+        snapshot.forEach((doc) => {
+          tempFirmas.push({ id: doc.id, ...doc.data() });
+        });
+        firmasClientes = tempFirmas;
+        cfg('firmas', firmasClientes);
+        renderFirmas();
+      });
+
+      const qFotos = collection(db, 'artifacts', appId, 'public', 'data', 'fotos');
+      onSnapshot(qFotos, (snapshot) => {
+        let tempFotos = [];
+        snapshot.forEach((doc) => {
+          tempFotos.push({ id: doc.id, ...doc.data() });
+        });
+        albumFotos = tempFotos;
+        cfg('fotos', albumFotos);
+        renderGaleriaFotos();
+      });
+
+      const docEmpresa = doc(db, 'artifacts', appId, 'public', 'data', 'empresa', 'perfil');
+      onSnapshot(docEmpresa, (snapshot) => {
+        if (snapshot.exists()) {
+          const emp = snapshot.data();
+          document.getElementById('emp-nombre').value = emp.nombre || '';
+          document.getElementById('emp-dir').value = emp.dir || '';
+          document.getElementById('emp-tel').value = emp.tel || '';
+          document.getElementById('emp-nit').value = emp.nit || '';
+          cfg('empresa', emp);
+        }
+      });
+    }
+
+    function actualizarPanelesActivos() {
+      const activeTabButton = document.querySelector('.tab-btn.text-neonCyan');
+      if (activeTabButton) {
+        const btnText = activeTabButton.textContent.toLowerCase();
+        if (btnText.includes('finanzas')) renderFinanzas();
+        if (btnText.includes('multimedia')) cargarSelectsMultimedia();
+        if (btnText.includes('firma')) renderFirmas();
+      }
+    }
+
+    // --- ACCIONES ESCRIBIR NUBE ---
+    async function procesarFormularioOrden(event) {
+      event.preventDefault();
+      const idx = document.getElementById('form-edit-idx').value;
+      const tipoPresupuesto = document.getElementById('form-presupuesto-tipo').value;
+      const numOrden = document.getElementById('form-numero').value;
+
+      const ordData = {
+        numero: numOrden,
+        nombre: document.getElementById('form-nombre').value.trim(),
+        telefono: document.getElementById('form-telefono').value.trim(),
+        dispositivo: document.getElementById('form-dispositivo').value.trim(),
+        presupuesto: tipoPresupuesto === 'pendiente' ? 'Pendiente' : (parseInt(document.getElementById('form-presupuesto').value) || 0),
+        decision: document.getElementById('form-decision').value,
+        pago: document.getElementById('form-pago').value,
+        estado: document.getElementById('form-estado').value,
+        obs: document.getElementById('form-obs').value.trim(),
+        fecha: new Date().toISOString()
+      };
+
+      if (isCloudActive && db) {
+        try {
+          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'ordenes', numOrden);
+          await setDoc(docRef, ordData);
+          toast(`✅ Orden N° ${numOrden} guardada y sincronizada`, "green");
+          cerrarModalOrden();
+        } catch (e) {
+          toast("⚠️ Fallo temporal en red. Salvando localmente.", "pink");
+          guardarLocalmente(idx, ordData);
+        }
+      } else {
+        guardarLocalmente(idx, ordData);
+      }
+    }
+
+    function guardarLocalmente(idx, ordData) {
+      if (idx === '') {
+        todasOrdenes.push(ordData);
+      } else {
+        todasOrdenes[idx] = ordData;
+      }
+      todasOrdenes.sort((a, b) => parseInt(b.numero) - parseInt(a.numero));
+      cfg('ordenes', todasOrdenes);
+      toast(`✅ Orden guardada de forma local`, "green");
+      cerrarModalOrden();
+      renderHistorial();
+    }
+
+    async function eliminarOrdenPorIndice(idx) {
+      const o = todasOrdenes[idx];
+      if (!o) return;
+
+      customConfirm(`¿Deseas eliminar la Orden N° ${o.numero}?`, async () => {
+        if (isCloudActive && db) {
+          try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ordenes', o.numero));
+            toast("Orden eliminada de todos los dispositivos", "pink");
+          } catch (e) {
+            toast("❌ Error en nube. Removiendo localmente.", "pink");
+            eliminarLocal(idx);
+          }
+        } else {
+          eliminarLocal(idx);
+        }
+      });
+    }
+
+    function eliminarLocal(idx) {
+      todasOrdenes.splice(idx, 1);
+      cfg('ordenes', todasOrdenes);
+      renderHistorial();
+      toast("Orden removida localmente", "pink");
+    }
+
+    async function guardarFirmaCliente() {
+      const selectOrd = document.getElementById('sign-orden-select');
+      const nombreSign = document.getElementById('sign-client-name').value.trim();
+
+      if (!selectOrd || !selectOrd.value) {
+        toast("❌ Registre una orden primero para poder firmar", "pink");
+        return;
+      }
+      if (!nombreSign) {
+        toast("❌ Ingrese el nombre del firmante", "pink");
+        return;
+      }
+
+      const imgFirma64 = canvas.toDataURL();
+      if (imgFirma64.length < 2500) {
+        toast("❌ Dibuje su firma en el recuadro para registrar", "pink");
+        return;
+      }
+
+      const idFirma = 'f-' + Date.now();
+      const firmaData = {
+        orden: selectOrd.value,
+        nombre: nombreSign,
+        imagen: imgFirma64,
+        fecha: new Date().toLocaleDateString()
+      };
+
+      if (isCloudActive && db) {
+        try {
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'firmas', idFirma), firmaData);
+          toast("✅ Firma sincronizada en red", "green");
+          borrarFirma();
+          document.getElementById('sign-client-name').value = '';
+        } catch (e) {
+          toast("❌ Error en red al subir firma.", "pink");
+        }
+      } else {
+        firmasClientes.push({ id: idFirma, ...firmaData });
+        cfg('firmas', firmasClientes);
+        toast("✅ Firma guardada localmente", "green");
+        borrarFirma();
+        document.getElementById('sign-client-name').value = '';
+        renderFirmas();
+      }
+    }
+
+    async function eliminarFirma(id) {
+      customConfirm("¿Deseas eliminar esta firma?", async () => {
+        if (isCloudActive && db) {
+          try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'firmas', id));
+            toast("Firma removida del servidor", "pink");
+          } catch (e) {
+            toast("Fallo de red", "pink");
+          }
+        } else {
+          firmasClientes = firmasClientes.filter(f => f.id !== id);
+          cfg('firmas', firmasClientes);
+          renderFirmas();
+          toast("Firma removida localmente", "pink");
+        }
+      });
+    }
+
+    async function guardarFotoEvidencia() {
+      const ordenNum = document.getElementById('foto-orden').value;
+      if (!fotoTemporalBase64) {
+        toast("❌ Primero cargue una imagen o evidencia", "pink");
+        return;
+      }
+
+      const idFoto = 'img-' + Date.now();
+      const fotoData = {
+        orden: ordenNum,
+        imagen: fotoTemporalBase64,
+        fecha: new Date().toLocaleDateString()
+      };
+
+      if (isCloudActive && db) {
+        try {
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fotos', idFoto), fotoData);
+          toast(`✅ Foto sincronizada para Orden N° ${ordenNum}`, "green");
+          fotoTemporalBase64 = null;
+          document.getElementById('img-recepcion-preview').classList.add('hidden');
+          document.getElementById('foto-vacio').style.display = 'block';
+        } catch (e) {
+          toast("❌ Error al subir imagen a la nube", "pink");
+        }
+      } else {
+        albumFotos.push({ id: idFoto, ...fotoData });
+        cfg('fotos', albumFotos);
+        toast("✅ Imagen guardada localmente", "green");
+        fotoTemporalBase64 = null;
+        document.getElementById('img-recepcion-preview').classList.add('hidden');
+        document.getElementById('foto-vacio').style.display = 'block';
+        renderGaleriaFotos();
+      }
+    }
+
+    async function eliminarFoto(id) {
+      customConfirm("¿Deseas eliminar esta evidencia?", async () => {
+        if (isCloudActive && db) {
+          try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fotos', id));
+            toast("Evidencia removida de la nube", "pink");
+          } catch (e) {
+            toast("Fallo al remover imagen", "pink");
+          }
+        } else {
+          albumFotos = albumFotos.filter(f => f.id !== id);
+          cfg('fotos', albumFotos);
+          renderGaleriaFotos();
+          toast("Evidencia removida localmente", "pink");
+        }
+      });
+    }
+
+    async function guardarEmpresa() {
+      const empData = {
+        nombre: document.getElementById('emp-nombre').value.trim() || "VARIEDADES AYC",
+        dir: document.getElementById('emp-dir').value.trim() || "Ventas y Servicio Técnico",
+        tel: document.getElementById('emp-tel').value.trim() || "6407-62-54",
+        nit: document.getElementById('emp-nit').value.trim() || "RUT 12.345.678-9"
+      };
+
+      if (isCloudActive && db) {
+        try {
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'empresa', 'perfil'), empData);
+          toast("✅ Configuración del taller actualizada en red", "green");
+        } catch (e) {
+          toast("❌ Error sincronizando perfil", "pink");
+        }
+      } else {
+        cfg('empresa', empData);
+        toast("✅ Configuración guardada de forma local", "green");
+      }
+    }
+
+    async function confirmarRestablecimiento() {
+      customConfirm("🚨 ADVERTENCIA CRÍTICA: Se vaciará por completo la base de datos sincronizada. ¿Continuar?", async () => {
+        if (isCloudActive && db) {
+          try {
+            for (let o of todasOrdenes) {
+              await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ordenes', o.numero));
+            }
+            for (let f of firmasClientes) {
+              await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'firmas', f.id));
+            }
+            for (let img of albumFotos) {
+              await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fotos', img.id));
+            }
+            toast("Servidor de la Nube vaciado con éxito", "green");
+          } catch (e) {
+            toast("Error vaciando registros", "red");
+          }
+        } else {
+          localStorage.clear();
+          todasOrdenes = [];
+          firmasClientes = [];
+          albumFotos = [];
+          renderHistorial();
+          toast("Almacenamiento local limpiado", "pink");
+        }
+      });
+    }
+
+    function reforzarSincronia() {
+      toast("🔄 Sincronizando datos con la Nube...", "cyan");
+      initFirebase();
+    }
+
+    function actualizarUIDrive(conectado) {
+      if (conectado) {
+        driveDot.className = "relative inline-flex rounded-full h-2 w-2 bg-neonGreen glow-green";
+        drivePing.className = "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-neonGreen";
+        driveText.textContent = "Sincronizado con la Nube 🟢";
+        driveText.className = "text-xs font-semibold tracking-wider text-neonGreen animate-pulse";
+      } else {
+        driveDot.className = "relative inline-flex rounded-full h-2 w-2 bg-slate-500";
+        drivePing.className = "hidden";
+        driveText.textContent = "Sin Conexión (Modo Local) 🛑";
+        driveText.className = "text-xs font-semibold tracking-wider text-slate-500";
+      }
+    }
+
+    // --- ENLACE AL CONTEXTO WINDOW GLOBAL ---
+    window.procesarFormularioOrden = procesarFormularioOrden;
+    window.eliminarOrdenPorIndice = eliminarOrdenPorIndice;
+    window.guardarFirmaCliente = guardarFirmaCliente;
+    window.eliminarFirma = eliminarFirma;
+    window.guardarFotoEvidencia = guardarFotoEvidencia;
+    window.eliminarFoto = eliminarFoto;
+    window.guardarEmpresa = guardarEmpresa;
+    window.reforzarSincronia = reforzarSincronia;
+    window.confirmarRestablecimiento = confirmarRestablecimiento;
+    window.copySyncCode = copySyncCode;
+    window.linkSyncDevice = linkSyncDevice;
+
+    // Inicializar Firebase automáticamente
+    initFirebase();
+  </script>
+</body>
+</html>
+
+```
