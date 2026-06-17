@@ -1,0 +1,2716 @@
+
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-[#030712]">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AyC - Sistema de Gestión Sincronizado</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght=600;800;900&family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            orbitron: ['Orbitron', 'sans-serif'],
+          },
+          colors: {
+            neonCyan: '#00f5ff',
+            neonPink: '#ff2d78',
+            neonGreen: '#39ff14',
+            neonYellow: '#ffdf00',
+            neonPurple: '#bd53ff',
+            darkBg: '#030712',
+            cardBg: '#0b1329',
+            fieldBg: '#111c44',
+            borderColor: '#1e295d'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    /* Efecto Glow Neon */
+    .glow-cyan { box-shadow: 0 0 15px rgba(0, 245, 255, 0.3); }
+    .glow-pink { box-shadow: 0 0 15px rgba(255, 45, 120, 0.3); }
+    .glow-green { box-shadow: 0 0 15px rgba(57, 255, 20, 0.3); }
+    
+    /* Scrollbars personalizadas */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #030712; }
+    ::-webkit-scrollbar-thumb { background: #1e295d; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00f5ff; }
+
+    /* Estilo Impresión */
+    @media print {
+      body * { visibility: hidden; }
+      #printable-receipt, #printable-receipt * { visibility: visible; }
+      #printable-receipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        background: white !important;
+        color: black !important;
+      }
+    }
+  </style>
+</head>
+<body class="font-sans text-slate-200 min-h-screen flex flex-col bg-[#030712] selection:bg-neonCyan/30 selection:text-white">
+
+  <!-- NOTIFICACIÓN TOAST MEJORADA -->
+  <div id="toast-msg" class="fixed bottom-6 right-6 z-[12000] transition-all duration-300 transform translate-y-12 opacity-0 flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border backdrop-blur-md bg-slate-900/95">
+    <div id="toast-icon"></div>
+    <p id="toast-text" class="text-sm font-semibold"></p>
+  </div>
+
+  <!-- MODAL DE CONFIRMACIÓN CUSTOM -->
+  <div id="confirm-modal" class="fixed inset-0 z-[11000] hidden items-center justify-center p-4 bg-black/85 backdrop-blur-sm transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl transform scale-95 transition-transform duration-300 glow-pink">
+      <div class="flex items-center gap-4 text-neonPink mb-4">
+        <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+        <h3 class="text-lg font-orbitron font-bold tracking-wider">Confirmar Acción</h3>
+      </div>
+      <p id="confirm-message" class="text-slate-300 text-sm leading-relaxed mb-6"></p>
+      <div class="flex gap-3 justify-end">
+        <button onclick="closeConfirm(false)" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition font-semibold text-sm">Cancelar</button>
+        <button onclick="closeConfirm(true)" class="px-5 py-2 rounded-lg bg-neonPink text-slate-950 hover:bg-pink-600 font-bold text-sm transition shadow-lg shadow-neonPink/25">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA DE INICIO DE SESIÓN -->
+  <div id="login-overlay" class="fixed inset-0 bg-[#030712] z-[10000] flex items-center justify-center p-4">
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 w-full max-w-md text-center shadow-2xl relative overflow-hidden backdrop-blur-md glow-cyan">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neonCyan via-neonPink to-neonGreen"></div>
+      
+      <!-- Contenedor de Logo Inteligente sin errores visuales de imagen rota -->
+      <div class="w-28 h-28 rounded-full border-2 border-neonCyan shadow-lg shadow-neonCyan/30 mx-auto mb-6 flex items-center justify-center bg-slate-950 overflow-hidden">
+        <img id="logo-preview-img" src="image.png" class="w-full h-full object-cover" alt="Variedades AyC" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+        <div class="hidden w-full h-full flex flex-col items-center justify-center bg-slate-950">
+          <span class="text-xs font-orbitron font-bold text-neonCyan tracking-widest leading-none">VARIEDADES</span>
+          <span class="text-3xl font-orbitron font-black text-neonPink italic leading-none mt-1">AyC</span>
+        </div>
+      </div>
+      
+      <h2 class="text-2xl font-orbitron font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-neonCyan mb-1">Variedades AyC</h2>
+      <p class="text-xs uppercase tracking-widest text-slate-500 mb-8 font-medium">Control de Seguridad y Autenticación</p>
+      
+      <div class="text-left mb-6">
+        <label class="block text-xs uppercase text-slate-400 font-semibold tracking-wider mb-2">Contraseña del Operador</label>
+        <div class="relative">
+          <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-slate-500"></i>
+          <input type="password" id="login-password-field" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-center font-mono text-xl tracking-widest text-white placeholder-slate-700 focus:border-neonCyan focus:ring-1 focus:ring-neonCyan/40 outline-none transition duration-300" placeholder="••••" onkeydown="checkLoginKey(event)">
+        </div>
+      </div>
+      
+      <button class="w-full py-3.5 px-6 rounded-xl bg-neonCyan text-slate-950 font-extrabold tracking-wider hover:bg-cyan-400 hover:shadow-lg hover:shadow-neonCyan/35 transition-all duration-300" onclick="procesarLogin()">Entrar al Terminal</button>
+      
+      <p class="text-[10px] text-slate-600 mt-8">Taller de Reparación Especializado &copy; 2026</p>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div id="app-main-view" class="flex-1 flex flex-col hidden">
+    <!-- HEADER -->
+    <header class="bg-slate-950/80 border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+          <!-- Contenedor de Logo Inteligente en Header -->
+          <div class="w-14 h-14 rounded-full border-2 border-neonCyan/60 shadow-md shadow-neonCyan/20 flex items-center justify-center bg-slate-950 overflow-hidden">
+            <img src="image.png" class="w-full h-full object-cover" alt="Variedades AyC" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+            <div class="hidden w-full h-full flex flex-col items-center justify-center bg-slate-950">
+              <span class="text-[7px] font-orbitron font-bold text-neonCyan tracking-wider leading-none">VARIEDADES</span>
+              <span class="text-lg font-orbitron font-black text-neonPink italic leading-none mt-0.5">AyC</span>
+            </div>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-orbitron font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-neonCyan">AyC SERVICIOS</h1>
+            <p class="text-[10px] text-slate-400 tracking-widest uppercase font-semibold">Taller Integrado & Registro de Firmas</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3 bg-slate-900/60 border border-slate-800 px-4 py-2 rounded-full">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-slate-500" id="drive-ping"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-slate-500" id="drive-dot"></span>
+          </span>
+          <span id="drive-text" class="text-xs font-semibold tracking-wider text-slate-400">Verificando enlaces...</span>
+        </div>
+      </div>
+      <div class="h-[2px] w-full bg-gradient-to-r from-neonCyan via-neonPink to-neonGreen"></div>
+    </header>
+
+    <!-- NAVEGACIÓN -->
+    <nav class="bg-slate-950/40 border-b border-slate-900 flex overflow-x-auto scrollbar-none">
+      <div class="max-w-7xl mx-auto px-4 w-full flex">
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap active" onclick="changeTab('tab-orders')">
+          <i data-lucide="clipboard-list" class="w-4 h-4"></i> Órdenes de Trabajo
+        </button>
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap" onclick="changeTab('tab-signatures')">
+          <i data-lucide="pen-tool" class="w-4 h-4"></i> Firma Digital
+        </button>
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap" onclick="changeTab('tab-multimedia')">
+          <i data-lucide="camera" class="w-4 h-4"></i> Multimedia & WhatsApp
+        </button>
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap" onclick="changeTab('tab-finance')">
+          <i data-lucide="line-chart" class="w-4 h-4"></i> Finanzas
+        </button>
+        <button class="tab-btn py-4 px-6 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-neonCyan transition duration-300 flex items-center gap-2 whitespace-nowrap" onclick="changeTab('tab-config')">
+          <i data-lucide="settings" class="w-4 h-4"></i> Configuración
+        </button>
+      </div>
+    </nav>
+
+    <!-- CONTENIDO VISTAS -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 py-6 w-full">
+
+      <!-- 1. ÓRDENES -->
+      <section id="tab-orders" class="view-panel block space-y-6">
+        <!-- PANEL DE BÚSQUEDA Y SELECCIÓN DE FILTROS ORIGINAL SIMPLIFICADO -->
+        <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl shadow-xl">
+          <div class="flex flex-col md:flex-row gap-4 items-end">
+            <!-- Buscador Global original -->
+            <div class="w-full md:flex-1">
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Buscar Dispositivo o Cliente</label>
+              <div class="relative">
+                <i data-lucide="search" class="absolute left-4 top-3 w-5 h-5 text-slate-500"></i>
+                <input type="text" id="inp-search" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-12 pr-4 text-sm text-white focus:border-neonCyan outline-none transition duration-300" oninput="renderHistorial()" placeholder="Ej. Juan Pérez / Samsung S21 / Consola PS5...">
+              </div>
+            </div>
+            
+            <!-- Filtro de Estado original -->
+            <div class="w-full sm:w-1/2 md:w-48">
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Filtrar por Estado</label>
+              <select id="filter-estado" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer" onchange="renderHistorial()">
+                <option value="TODOS">Todos los Estados</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Entregado">Entregado</option>
+                <option value="Sin solución">Sin solución</option>
+                <option value="Garantía">Garantía</option>
+              </select>
+            </div>
+
+            <!-- FILTRO ÚNICO ADICIONAL SOLICITADO: Decisión del Cliente -->
+            <div class="w-full sm:w-1/2 md:w-48">
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Decisión del Cliente</label>
+              <select id="filter-decision-taller" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer" onchange="renderHistorial()">
+                <option value="TODOS">Todas las decisiones</option>
+                <option value="SI">Aprobado para Reparar (SI)</option>
+                <option value="NO">Rechazado (NO)</option>
+                <option value="T">Pendiente en Taller (T)</option>
+              </select>
+            </div>
+
+            <!-- Botones de Acción originales -->
+            <div class="w-full md:w-64 flex gap-2">
+              <button class="flex-1 py-2.5 px-4 rounded-xl bg-neonCyan/10 border border-neonCyan/40 text-neonCyan hover:bg-neonCyan hover:text-slate-950 font-bold text-sm tracking-wider transition-all duration-300 flex items-center justify-center gap-2" onclick="crearNuevaOrden()">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Nueva Orden
+              </button>
+              <button class="py-2.5 px-4 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-neonCyan font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2" onclick="exportarCSV()">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> CSV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="box-alertas-retraso" class="bg-slate-950 border border-neonPink/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-neonPink"></div>
+          <h4 class="text-sm font-orbitron font-bold text-neonPink tracking-wider flex items-center gap-2 mb-4">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i> ALERTA: EQUIPOS DETENIDOS EN TALLER
+          </h4>
+          <div id="alertas-retraso-container" class="space-y-2"></div>
+        </div>
+
+        <div class="bg-slate-900/40 border border-slate-800/85 rounded-2xl shadow-xl overflow-hidden">
+          <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+            <h3 class="font-orbitron font-bold text-sm uppercase tracking-widest text-slate-300">Registro General de Diagnósticos</h3>
+            <span class="text-xs bg-slate-800 text-slate-400 font-semibold px-3 py-1 rounded-full" id="row-count">0 Órdenes</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr class="border-b border-slate-800 bg-slate-950/40">
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Orden</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Cliente</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Dispositivo</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Presupuesto</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Decisión</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Estado</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Método</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider">Ingreso</th>
+                  <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan tracking-wider text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-ordenes-body" class="divide-y divide-slate-800/50"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. FIRMA DIGITAL -->
+      <section id="tab-signatures" class="view-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-neonGreen"></div>
+            <h3 class="font-orbitron font-bold text-sm tracking-widest uppercase text-slate-300 mb-2">Consentimiento de Pruebas de Diagnóstico</h3>
+            <p class="text-xs text-slate-400 mb-6 leading-relaxed">El firmante aprueba expresamente la revisión interna de su equipo, aceptando los posibles riesgos asociados de diagnóstico de taller.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Asociar a la Orden</label>
+                <select id="sign-orden-select" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none"></select>
+              </div>
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Nombre de Autorizador</label>
+                <input type="text" id="sign-client-name" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Escriba el nombre completo">
+              </div>
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Firme en el lienzo interactivo</label>
+                <div class="border border-slate-800 rounded-xl bg-slate-950 overflow-hidden relative touch-none">
+                  <canvas id="canvas-firma" class="w-full h-40 cursor-crosshair block bg-slate-950"></canvas>
+                </div>
+              </div>
+              <div class="flex gap-3 justify-end pt-2">
+                <button class="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 font-semibold transition" onclick="borrarFirma()">Limpiar</button>
+                <button class="px-5 py-2 text-xs rounded-lg bg-neonGreen text-slate-950 hover:bg-green-500 font-bold transition" onclick="guardarFirmaCliente()">Registrar Autorización</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl shadow-xl overflow-hidden">
+            <div class="p-5 border-b border-slate-800">
+              <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">Historial de Firmas Digitales</h3>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="bg-slate-950/40 border-b border-slate-800">
+                    <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan">Firma</th>
+                    <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan">Referencia</th>
+                    <th class="px-6 py-4 font-orbitron text-xs font-bold text-neonCyan text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-firmas-body" class="divide-y divide-slate-800/50"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. MULTIMEDIA & WHATSAPP -->
+      <section id="tab-multimedia" class="view-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
+            <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300 mb-1">Registro Fotográfico del Estado del Equipo</h3>
+            
+            <div>
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Vincular a Orden</label>
+              <select id="foto-orden" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none"></select>
+            </div>
+
+            <div class="border border-slate-800 rounded-xl bg-slate-950/60 min-h-[180px] flex flex-col items-center justify-center p-4 relative">
+              <div id="foto-vacio" class="text-center text-slate-500 space-y-2">
+                <i data-lucide="image" class="w-10 h-10 mx-auto opacity-40"></i>
+                <p class="text-xs">No hay imagen cargada para previsualización</p>
+              </div>
+              <img id="img-recepcion-preview" class="hidden max-h-[220px] rounded-lg object-contain border border-slate-800" alt="Evidencia">
+            </div>
+
+            <div class="flex gap-3">
+              <label class="flex-1 py-2.5 px-4 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-center text-sm font-semibold hover:border-neonCyan transition cursor-pointer flex items-center justify-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4"></i> Cargar Archivo
+                <input type="file" id="foto-file-input" accept="image/*" class="hidden" onchange="procesarArchivoImagen(event)">
+              </label>
+              <button class="flex-1 py-2.5 px-4 rounded-xl bg-neonCyan text-slate-950 font-bold text-sm hover:bg-cyan-400 transition" onclick="guardarFotoEvidencia()">Guardar Imagen</button>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-neonPink"></div>
+            <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">Generación Automática de Mensajes</h3>
+            
+            <div>
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Seleccionar Orden</label>
+              <select id="wa-orden" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none" onchange="generarMensajeNotif()"></select>
+            </div>
+
+            <div>
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Tipo de Mensaje</label>
+              <select id="wa-plantilla" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-4 text-sm text-white focus:border-neonCyan outline-none" onchange="generarMensajeNotif()">
+                <option value="ingreso">Ingreso de Equipo a Taller</option>
+                <option value="reparado">Reparación Finalizada Exitosamente</option>
+                <option value="presupuesto">Cotización Técnica Estimada</option>
+                <option value="sinreparacion">Sin Reparación / Listo para Retirar</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Vista Previa del Texto</label>
+              <textarea id="wa-preview" class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs font-mono text-neonGreen h-24 focus:outline-none" readonly></textarea>
+            </div>
+
+            <button class="w-full py-3 px-4 rounded-xl bg-neonGreen text-slate-950 font-bold text-sm hover:bg-green-500 transition flex items-center justify-center gap-2" onclick="enviarMensajePorWA()">
+              <i data-lucide="send" class="w-4 h-4"></i> Enviar a WhatsApp
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
+          <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300 mb-6">Álbum de Evidencias Fotográficas</h3>
+          <div id="galeria-fotos" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+        </div>
+      </section>
+
+      <!-- 4. FINANZAS -->
+      <section id="tab-finance" class="view-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-7 bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-neonPink"></div>
+            <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300 mb-4">Ingresos por Método de Pago</h3>
+            <div class="h-64 relative">
+              <canvas id="canvas-finance-chart"></canvas>
+            </div>
+            <div id="finance-promedio-box" class="mt-6 border-t border-slate-800 pt-4 text-xs space-y-1 text-slate-300"></div>
+          </div>
+
+          <div class="lg:col-span-5 bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl flex flex-col justify-between">
+            <div>
+              <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300 mb-2">Equipos Listos (Por Cobrar)</h3>
+              <p class="text-xs text-slate-400 mb-4">Lista de clientes con reparaciones aprobadas y saldo pendiente por abonar.</p>
+              <div id="ordenesXpagar" class="space-y-3 max-h-52 overflow-y-auto pr-2"></div>
+            </div>
+            <div class="pt-6">
+              <button class="w-full py-2.5 px-4 rounded-xl bg-neonCyan text-slate-950 font-bold text-sm hover:bg-cyan-400 transition flex items-center justify-center gap-2" onclick="enviarPorEmail()">
+                <i data-lucide="mail" class="w-4 h-4"></i> Exportar Resumen a Correo
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. CONFIGURACIÓN -->
+      <section id="tab-config" class="view-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Datos Corporativos -->
+          <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl relative overflow-hidden space-y-4">
+            <div class="absolute top-0 left-0 w-1 h-full bg-neonGreen"></div>
+            <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">Perfil Comercial del Taller</h3>
+            
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Nombre de la Empresa</label>
+                <input type="text" id="emp-nombre" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. Servicio Técnico AyC">
+              </div>
+              <div>
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Dirección del Local</label>
+                <input type="text" id="emp-dir" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. Avenida Principal N° 45">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Teléfono de Contacto</label>
+                  <input type="text" id="emp-tel" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. 6407-62-54">
+                </div>
+                <div>
+                  <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">ID Tributario (RUT / NIT)</label>
+                  <input type="text" id="emp-nit" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. RUT 12.345-678-9">
+                </div>
+              </div>
+            </div>
+            <button class="w-full py-2.5 px-4 rounded-xl bg-neonGreen text-slate-950 font-bold text-sm hover:bg-green-500 transition" onclick="guardarEmpresa()">Guardar Datos de Empresa</button>
+          </div>
+
+          <!-- Parámetros de Taller y Enlace Remoto -->
+          <div class="space-y-6">
+            <!-- ENLACE COMPARTIDO INSTANTÁNEO -->
+            <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl relative overflow-hidden space-y-4">
+              <div class="absolute top-0 left-0 w-1 h-full bg-neonCyan"></div>
+              <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">🔗 Enlace Rápido de Dispositivos</h3>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Usa este panel para copiar la configuración activa y pegarla en cualquier otro celular o computadora. Así, verán exactamente los mismos datos en tiempo real.
+              </p>
+              
+              <!-- DISPOSITIVO 1: OBTENER CÓDIGO -->
+              <div class="space-y-2">
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider">Tu Código de Sincronización Activo</label>
+                <div class="flex gap-2">
+                  <input type="text" id="share-sync-code" class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg py-2 px-3 text-xs font-mono text-neonCyan outline-none" readonly>
+                  <button class="px-4 py-2 text-xs font-bold rounded-lg bg-neonCyan/10 border border-neonCyan/40 text-neonCyan hover:bg-neonCyan hover:text-slate-950 transition" onclick="copySyncCode()">Copiar Código</button>
+                </div>
+              </div>
+
+              <div class="border-t border-slate-800/60 pt-4 space-y-2">
+                <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider">Vincular un Nuevo Dispositivo</label>
+                <p class="text-[10px] text-slate-500 leading-normal mb-2">Pega aquí el código que copiaste del otro dispositivo y presiona Vincular.</p>
+                <div class="flex gap-2">
+                  <input type="text" id="paste-sync-code" class="flex-1 bg-slate-950/60 border border-slate-800 rounded-lg py-2 px-3 text-xs font-mono text-white outline-none" placeholder="Pega el código aquí...">
+                  <button class="px-4 py-2 text-xs font-bold rounded-lg bg-neonGreen text-slate-950 hover:bg-green-500 transition" onclick="linkSyncDevice()">Vincular</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parámetros de Taller -->
+            <div class="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
+              <h3 class="font-orbitron font-bold text-sm tracking-widest text-slate-300">Parámetros de Alerta de Demora</h3>
+              
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Alerta Preventiva (Días)</label>
+                  <input type="number" id="dias-alerta" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" min="1" max="30" onchange="actualizarParametroTaller('dias_alerta', this.value)">
+                </div>
+                <div>
+                  <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Alerta Crítica (Días)</label>
+                  <input type="number" id="dias-urgente" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" min="1" max="60" onchange="actualizarParametroTaller('dias_urgente', this.value)">
+                </div>
+              </div>
+
+              <div class="border-t border-slate-800/80 pt-6 flex gap-3">
+                <button class="flex-1 py-2.5 px-4 rounded-xl bg-neonCyan/10 border border-neonCyan/30 text-neonCyan font-bold text-sm hover:bg-cyan-950 transition flex items-center justify-center gap-2" onclick="reforzarSincronia()">
+                  <i data-lucide="refresh-cw" class="w-4 h-4"></i> Forzar Refresco
+                </button>
+                <button class="flex-1 py-2.5 px-4 rounded-xl bg-neonPink/10 border border-neonPink/30 text-neonPink font-bold text-sm hover:bg-neonPink hover:text-slate-950 transition flex items-center justify-center gap-2" onclick="confirmarRestablecimiento()">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i> Limpiar Datos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- IMPRESIÓN OFICIAL TÉRMICA / CARTA -->
+  <div id="printable-receipt" class="hidden font-sans p-6 text-black max-w-4xl mx-auto">
+    <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-4">
+      <div>
+        <h1 class="text-2xl font-bold font-orbitron" id="print-header-brand-name">VARIEDADES AYC</h1>
+        <p class="text-xs" id="print-header-nit"></p>
+        <p class="text-xs" id="print-header-address"></p>
+        <p class="text-xs" id="print-header-phone"></p>
+      </div>
+      <div>
+        <img src="image.png" class="w-20 h-20 rounded-full object-cover border-2 border-black" alt="Logo" onerror="showFallbackLogo(this)">
+      </div>
+    </div>
+
+    <div class="text-center mb-6">
+      <h2 class="text-lg font-bold uppercase tracking-wider border-b border-dashed border-black inline-block pb-1">Orden de Servicio Técnico</h2>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 text-xs mb-6">
+      <div class="border border-black p-4 rounded-lg bg-slate-50">
+        <h3 class="font-bold border-b border-black pb-1 mb-2 uppercase">Datos de Servicio</h3>
+        <p><strong>N° Orden:</strong> <span id="print-order-num" class="text-sm font-bold"></span></p>
+        <p><strong>Ingreso:</strong> <span id="print-order-date"></span></p>
+        <p><strong>Fecha Límite Retiro (30 días):</strong> <span id="print-order-deadline" class="font-bold text-red-600 text-sm"></span></p>
+        <p><strong>Estado del Equipo:</strong> <span id="print-order-status" class="font-bold uppercase"></span></p>
+      </div>
+      <div class="border border-black p-4 rounded-lg bg-slate-50">
+        <h3 class="font-bold border-b border-black pb-1 mb-2 uppercase">Datos del Cliente</h3>
+        <p><strong>Cliente:</strong> <span id="print-client-name" class="font-bold"></span></p>
+        <p><strong>Teléfono:</strong> <span id="print-client-phone"></span></p>
+        <p><strong>Dispositivo:</strong> <span id="print-device-name" class="font-semibold"></span></p>
+        <p><strong>Seguridad:</strong> <span id="print-device-security" class="font-bold text-red-600"></span></p>
+      </div>
+    </div>
+
+    <div class="border border-black p-4 rounded-lg text-xs mb-6 bg-slate-50">
+      <h3 class="font-bold border-b border-black pb-1 mb-2 uppercase">Observaciones y Diagnóstico Técnico</h3>
+      <p id="print-obs-diagnostico" class="mb-4 leading-relaxed whitespace-pre-line"></p>
+      <div class="flex justify-between border-t border-dashed border-gray-400 pt-2 text-sm font-semibold">
+        <p>Forma de Pago: <span id="print-pay-method"></span></p>
+        <p>Presupuesto Estimado: <span id="print-budget-val" class="font-bold text-base"></span></p>
+      </div>
+    </div>
+
+    <div class="border-2 border-red-600 bg-red-50 p-4 rounded-lg text-[9px] text-justify leading-relaxed text-red-950 mb-10">
+      <h4 class="font-bold text-red-700 uppercase mb-1 text-[10px]">⚠️ Términos, Condiciones y Cláusula de Abandono (30 días)</h4>
+      El cliente declara estar en pleno conocimiento y de acuerdo con que dispone de un plazo límite máximo de **30 días calendario** para retirar su equipo del taller técnico, computado desde la fecha de ingreso establecida en este documento o desde la fecha de notificación formal de finalización de trabajo. **Transcurrido el período indicado de 30 días sin que el dispositivo haya sido reclamado y retirado, este se considerará legalmente ABANDONADO, autorizando expresa, plena e irrevocablemente a Variedades AyC a disponer del mismo** para reciclaje, venta de componentes o destrucción, con el fin de resarcir el costo técnico de diagnóstico, mano de obra especializada y almacenamiento, sin responsabilidad alguna de indemnización o reposición de equipo para el propietario.
+    </div>
+
+    <div class="flex justify-between mt-12 px-6 text-xs">
+      <div class="text-center w-48">
+        <div class="border-b border-black h-8 mb-2"></div>
+        <p class="font-bold">Firma Autorizada Técnico</p>
+        <p class="text-[9px] text-gray-600">Variedades AyC</p>
+      </div>
+      <div class="text-center w-48">
+        <div class="border-b border-black h-8 mb-2"></div>
+        <p class="font-bold">Firma de Aceptación Cliente</p>
+        <p class="text-[9px] text-gray-600">Acepto los términos de servicio</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMULARIO MODAL -->
+  <div id="modal-editar-orden" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
+        <h3 id="modal-titulo" class="font-orbitron font-extrabold tracking-wider text-slate-200">Orden de Servicio Técnico</h3>
+        <button class="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition" onclick="cerrarModalOrden()">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <form id="form-orden-trabajo" onsubmit="procesarFormularioOrden(event)" class="space-y-4">
+        <!-- Campos Ocultos de Control -->
+        <input type="hidden" id="form-edit-idx">
+        <input type="hidden" id="form-fecha-original">
+        
+        <div>
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Número de Orden</label>
+          <input type="number" id="form-numero" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" required placeholder="Ej. 1004">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider">Nombre de Cliente</label>
+              <!-- BOTÓN DE SELECCIÓN DE CLIENTE -->
+              <button type="button" onclick="abrirModalClientes()" class="text-[10px] text-neonCyan hover:text-cyan-400 font-extrabold flex items-center gap-1 focus:outline-none transition-colors">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Seleccionar/Agregar Cliente
+              </button>
+            </div>
+            <input type="text" id="form-nombre" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" required placeholder="Juan Pérez">
+          </div>
+          <div>
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">WhatsApp / Teléfono</label>
+            <input type="text" id="form-telefono" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ej. 56912345678">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Modelo del Dispositivo</label>
+          <input type="text" id="form-dispositivo" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" required placeholder="Ej. PlayStation 5 Slim / iPhone 13 Pro">
+        </div>
+
+        <!-- BLOQUEO DE SEGURIDAD DEL DISPOSITIVO -->
+        <div class="bg-slate-950/40 border border-slate-800/85 rounded-xl p-3.5 space-y-3.5">
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider">Bloqueo de Seguridad del Equipo</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" id="btn-lock-ninguno" onclick="setTipoBloqueo('ninguno')" class="py-1.5 px-3 rounded-lg border border-slate-700 text-xs font-bold text-slate-300 hover:border-slate-500 transition-all">Ninguno</button>
+            <button type="button" id="btn-lock-pin" onclick="setTipoBloqueo('pin')" class="py-1.5 px-3 rounded-lg border border-slate-700 text-xs font-bold text-slate-300 hover:border-slate-500 transition-all">PIN o Clave</button>
+            <button type="button" id="btn-lock-patron" onclick="setTipoBloqueo('patron')" class="py-1.5 px-3 rounded-lg border border-slate-700 text-xs font-bold text-slate-300 hover:border-slate-500 transition-all">Patrón</button>
+          </div>
+          
+          <!-- Espacio para digitar PIN o Contraseña -->
+          <div id="group-lock-pin" class="hidden">
+            <label class="block text-[10px] uppercase text-slate-500 font-bold mb-1.5">Digite el PIN o Contraseña del Dispositivo</label>
+            <input type="text" id="form-lock-pin-val" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Escriba la clave de acceso">
+          </div>
+
+          <!-- Simulador Digital interactivo de Patrón -->
+          <div id="group-lock-patron" class="hidden space-y-2.5">
+            <div class="flex justify-between items-center">
+              <label class="block text-[10px] uppercase text-slate-500 font-bold">Dibuje el Patrón de desbloqueo</label>
+              <button type="button" onclick="limpiarPatronCanvas()" class="text-[10px] text-neonPink font-bold flex items-center gap-1 hover:underline">
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i> Reiniciar Patrón
+              </button>
+            </div>
+            <div class="border border-slate-850 rounded-xl bg-slate-950/80 overflow-hidden relative touch-none">
+              <canvas id="canvas-patron" class="w-full h-44 cursor-crosshair block bg-slate-950"></canvas>
+            </div>
+            <input type="hidden" id="form-lock-patron-val">
+            <div id="patron-visual-path" class="text-xs font-mono text-neonGreen text-center font-bold tracking-wide">Patrón: Ninguno</div>
+          </div>
+        </div>
+
+        <!-- CHECKLIST DE INGRESO INTERACTIVO CORREGIDO -->
+        <div>
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Estado Físico / Checklist de Ingreso</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs">
+            <label class="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition">
+              <input type="checkbox" id="chk-lente" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-neonCyan/80 focus:ring-0 focus:ring-offset-0 cursor-pointer">
+              <span>Lente rayado o roto</span>
+            </label>
+            <label class="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition">
+              <input type="checkbox" id="chk-mojado" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-neonCyan/80 focus:ring-0 focus:ring-offset-0 cursor-pointer">
+              <span>Teléfono mojado</span>
+            </label>
+            <label class="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition">
+              <input type="checkbox" id="chk-apagado" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-neonCyan/80 focus:ring-0 focus:ring-offset-0 cursor-pointer">
+              <span>Teléfono apagado</span>
+            </label>
+            <label class="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition">
+              <input type="checkbox" id="chk-pantalla" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-neonCyan/80 focus:ring-0 focus:ring-offset-0 cursor-pointer">
+              <span>Pantalla quebrada, rota</span>
+            </label>
+            <label class="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition">
+              <input type="checkbox" id="chk-marco-rayado" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-neonCyan/80 focus:ring-0 focus:ring-offset-0 cursor-pointer">
+              <span>Marco, quebrado o rayado</span>
+            </label>
+            <label class="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition">
+              <input type="checkbox" id="chk-marco-doblado" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-neonCyan/80 focus:ring-0 focus:ring-offset-0 cursor-pointer">
+              <span>Marco doblado</span>
+            </label>
+            <label class="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition">
+              <input type="checkbox" id="chk-tapa" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-neonCyan/80 focus:ring-0 focus:ring-offset-0 cursor-pointer">
+              <span>Tapa trasera, rayada o quebrada</span>
+            </label>
+            <label class="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition">
+              <input type="checkbox" id="chk-carga" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-neonCyan/80 focus:ring-0 focus:ring-offset-0 cursor-pointer">
+              <span>Teléfono carga</span>
+            </label>
+            <label class="flex items-center gap-2.5 cursor-pointer text-slate-300 hover:text-white transition col-span-1 sm:col-span-2">
+              <input type="checkbox" id="chk-sim" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-neonCyan/80 focus:ring-0 focus:ring-offset-0 cursor-pointer">
+              <span>Bandeja, SIM</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Tipo de Presupuesto</label>
+            <select id="form-presupuesto-tipo" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer" onchange="togglePresupuestoField()">
+              <option value="monto">Digitar Monto (Colones ₡)</option>
+              <option value="pendiente">Pendiente de cotización</option>
+            </select>
+          </div>
+          <div id="form-presupuesto-monto-group">
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Monto (₡)</label>
+            <input type="number" id="form-presupuesto" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none" placeholder="Ingresar cantidad en colones">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Decisión del Cliente</label>
+            <select id="form-decision" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer">
+              <option value="SI">Aprobado para Reparar (SI)</option>
+              <option value="NO">Rechazado (NO)</option>
+              <option value="T">Pendiente en Taller (T)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Estado del Equipo</label>
+            <select id="form-estado" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer">
+              <option value="Pendiente">Pendiente</option>
+              <option value="Entregado">Entregado</option>
+              <option value="Sin solución">Sin solución</option>
+              <option value="Garantía">Garantía</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Método de Pago</label>
+          <select id="form-pago" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-4 text-sm text-white focus:border-neonCyan outline-none cursor-pointer">
+            <option value="EF">Efectivo (EF)</option>
+            <option value="TR">Transferencia Electrónica (TR)</option>
+            <option value="TD">Tarjeta Débito / Crédito (TD)</option>
+            <option value="PD">Pago Pendiente (PD)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Fallo Técnico u Observaciones de Ingreso</label>
+          <textarea id="form-obs" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-sm text-white focus:border-neonCyan outline-none h-20" placeholder="Ingresar descripción del daño físico u observaciones técnicas..."></textarea>
+        </div>
+
+        <div class="flex gap-3 justify-end pt-4 border-t border-slate-800">
+          <button type="button" class="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 font-semibold text-slate-300 transition" onclick="cerrarModalOrden()">Cancelar</button>
+          <button type="submit" class="px-5 py-2 text-xs rounded-lg bg-neonCyan text-slate-950 font-bold transition shadow-lg shadow-neonCyan/20">Guardar Datos</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL SECUNDARIO DE GESTIÓN DE CLIENTES -->
+  <div id="modal-clientes" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 shadow-2xl relative glow-cyan">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+        <h3 class="font-orbitron font-extrabold tracking-wider text-slate-200 text-sm">👥 Directorio de Clientes</h3>
+        <button type="button" class="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition" onclick="cerrarModalClientes()">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <!-- Formulario para agregar cliente rápidamente -->
+      <div class="space-y-3 bg-slate-950/50 border border-slate-800 p-4 rounded-xl mb-6">
+        <h4 class="text-xs font-orbitron font-bold text-neonCyan uppercase tracking-widest">Crear Nuevo Registro</h4>
+        <div>
+          <label class="block text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-1">Nombre Completo</label>
+          <input type="text" id="new-cli-nombre" class="w-full bg-slate-900/60 border border-slate-800 rounded-lg py-2 px-3 text-xs text-white focus:border-neonCyan outline-none" placeholder="Ej. Juan Pérez">
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-1">WhatsApp / Teléfono</label>
+          <input type="text" id="new-cli-telefono" class="w-full bg-slate-900/60 border border-slate-800 rounded-lg py-2 px-3 text-xs text-white focus:border-neonCyan outline-none" placeholder="Ej. 50688888888">
+        </div>
+        <button type="button" onclick="guardarNuevoCliente()" class="w-full py-2 rounded-lg bg-neonCyan text-slate-950 font-bold text-xs hover:bg-cyan-400 transition shadow-md shadow-neonCyan/20">
+          Guardar Cliente en la Nube
+        </button>
+      </div>
+
+      <!-- Buscador y lista de clientes registrados -->
+      <div>
+        <h4 class="text-xs font-orbitron font-bold text-slate-300 uppercase tracking-widest mb-3">Seleccionar de la Lista</h4>
+        <div class="relative mb-3">
+          <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-500"></i>
+          <input type="text" id="search-clientes" oninput="renderListaClientes()" class="w-full bg-slate-950/60 border border-slate-800 rounded-lg py-2 pl-9 pr-3 text-xs text-white focus:border-neonCyan outline-none" placeholder="Buscar cliente por nombre o teléfono...">
+        </div>
+        <div id="lista-clientes-container" class="space-y-2 max-h-44 overflow-y-auto pr-1">
+          <!-- Render dinámico de clientes -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT 1: INTERFAZ DE USUARIO COMPLETA E INDEPENDIENTE -->
+  <script>
+    // --- ESTADO LOCAL SEGURO COMPARTIDO EN WINDOW ---
+    function cfg(key, val) {
+      if (val !== undefined) {
+        localStorage.setItem('ayc_system_' + key, JSON.stringify(val));
+        return val;
+      }
+      const data = localStorage.getItem('ayc_system_' + key);
+      return data ? JSON.parse(data) : null;
+    }
+
+    // Corregido: Uso de flags de inicialización para evitar que los datos por defecto sobrescriban los vacíos
+    const hasInitSetup = cfg('has_initial_setup_v1');
+    
+    if (!hasInitSetup) {
+      window.todasOrdenes = [
+        { numero: "1001", nombre: "Mario Gómez", telefono: "64076254", dispositivo: "Samsung S21", presupuesto: 45000, decision: "SI", pago: "EF", obs: "Cambio de pantalla táctil.", fecha: new Date().toISOString(), estado: "Entregado", checklist: ["Pantalla quebrada, rota"], tipoBloqueo: "pin", valorBloqueo: "9876" },
+        { numero: "1002", nombre: "Catalina Soto", telefono: "88888888", dispositivo: "MacBook Air", presupuesto: "Pendiente", decision: "T", pago: "PD", obs: "No enciende después de mojarse.", fecha: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(), estado: "Pendiente", checklist: ["Teléfono mojado", "Teléfono apagado"], tipoBloqueo: "ninguno", valorBloqueo: "" },
+        { numero: "1003", nombre: "Roberto Diaz", telefono: "77777777", dispositivo: "iPad Pro", presupuesto: 85000, decision: "SI", pago: "TR", obs: "Pin de carga sulfatado.", fecha: new Date().toISOString(), estado: "Garantía", checklist: ["Teléfono carga"], tipoBloqueo: "patron", valorBloqueo: "1-4-7-8-9" }
+      ];
+
+      window.todosClientes = [
+        { id: "cli-1", nombre: "Mario Gómez", telefono: "64076254" },
+        { id: "cli-2", nombre: "Catalina Soto", telefono: "88888888" },
+        { id: "cli-3", nombre: "Roberto Diaz", telefono: "77777777" }
+      ];
+      
+      cfg('ordenes', window.todasOrdenes);
+      cfg('clientes', window.todosClientes);
+      cfg('has_initial_setup_v1', true);
+    } else {
+      window.todasOrdenes = cfg('ordenes') || [];
+      window.todosClientes = cfg('clientes') || [];
+    }
+
+    window.firmasClientes = cfg('firmas') || [];
+    window.albumFotos = cfg('fotos') || [];
+    window.isCloudActive = false;
+    window.tipoBloqueoActivo = 'ninguno';
+    
+    let chartFinanciero = null;
+    let fotoTemporalBase64 = null;
+    let canvas, ctxCanvas, drawing = false;
+
+    // --- VARIABLES DE CONTROL PARA EL PATRÓN DE BLOQUEO ---
+    let canvasPatron, ctxPatron, drawingPatron = false;
+    let nodesPatron = [];
+    let pathPatron = [];
+
+    // --- ACCESO OPERADOR ---
+    function checkLoginKey(e) {
+      if (e.key === 'Enter') procesarLogin();
+    }
+
+    function procesarLogin() {
+      const field = document.getElementById('login-password-field');
+      if (!field) return;
+
+      if (field.value === "1234") {
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-main-view').classList.remove('hidden');
+        toast("🔓 Acceso Correcto. ¡Sistema cargado con éxito!", "green");
+        renderHistorial();
+      } else {
+        toast("❌ Contraseña incorrecta. Inténtelo de nuevo.", "pink");
+        field.value = "";
+        field.focus();
+      }
+    }
+
+    // --- MANEJO DE PESTAÑAS (SPA) ---
+    function changeTab(panelId) {
+      document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('text-neonCyan', 'border-neonCyan', 'bg-neonCyan/5');
+        btn.classList.add('text-slate-400', 'border-transparent');
+      });
+
+      const activePanel = document.getElementById(panelId);
+      if (activePanel) activePanel.classList.remove('hidden');
+
+      const triggerBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(panelId));
+      if (triggerBtn) {
+        triggerBtn.classList.add('text-neonCyan', 'border-neonCyan', 'bg-neonCyan/5');
+        triggerBtn.classList.remove('text-slate-400', 'border-transparent');
+      }
+
+      if (panelId === 'tab-signatures') {
+        setTimeout(() => {
+          inicCanvas();
+          renderFirmas();
+        }, 100);
+      }
+      if (panelId === 'tab-multimedia') {
+        cargarSelectsMultimedia();
+        renderGaleriaFotos();
+      }
+      if (panelId === 'tab-finance') {
+        renderFinanzas();
+      }
+      safeInitIcons();
+    }
+
+    // --- MODALES DE CONFIRMACIÓN INTERNOS ---
+    let pendingConfirmCallback = null;
+    function customConfirm(message, callback) {
+      document.getElementById('confirm-message').textContent = message;
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      pendingConfirmCallback = callback;
+    }
+
+    function closeConfirm(result) {
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      if (result && pendingConfirmCallback) {
+        pendingConfirmCallback();
+      }
+      pendingConfirmCallback = null;
+    }
+
+    // --- ACCIÓN MODALES DE FORMULARIO ---
+    function cerrarModalOrden() {
+      document.getElementById('modal-editar-orden').classList.add('hidden');
+      document.getElementById('modal-editar-orden').classList.remove('flex');
+    }
+
+    function togglePresupuestoField() {
+      const tipo = document.getElementById('form-presupuesto-tipo').value;
+      const group = document.getElementById('form-presupuesto-monto-group');
+      const input = document.getElementById('form-presupuesto');
+      if (tipo === 'pendiente') {
+        group.classList.add('hidden');
+        input.removeAttribute('required');
+      } else {
+        group.classList.remove('hidden');
+        input.setAttribute('required', 'required');
+      }
+    }
+
+    // --- FUNCIONES GESTIÓN DE CLIENTES ---
+    function abrirModalClientes() {
+      const modal = document.getElementById('modal-clientes');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      renderListaClientes();
+      safeInitIcons();
+    }
+
+    function cerrarModalClientes() {
+      const modal = document.getElementById('modal-clientes');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function renderListaClientes() {
+      const container = document.getElementById('lista-clientes-container');
+      const searchVal = document.getElementById('search-clientes').value.toLowerCase();
+      if (!container) return;
+
+      const filtrados = (window.todosClientes || []).filter(c => 
+        (c.nombre && c.nombre.toLowerCase().includes(searchVal)) || 
+        (c.telefono && c.telefono.includes(searchVal))
+      );
+
+      if (filtrados.length === 0) {
+        container.innerHTML = `<div class="text-slate-500 text-xs text-center py-6">No hay clientes con este criterio.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtrados.map(c => `
+        <div class="bg-slate-950/80 border border-slate-850 p-2.5 rounded-lg flex justify-between items-center text-xs hover:border-neonCyan transition">
+          <div class="cursor-pointer flex-1" onclick="seleccionarCliente('${c.nombre.replace(/'/g, "\\'")}', '${(c.telefono || '').replace(/'/g, "\\'")}')">
+            <div class="font-bold text-slate-200 hover:text-neonCyan transition">${c.nombre}</div>
+            <div class="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+              <i data-lucide="phone" class="w-3 h-3"></i> ${c.telefono || 'Sin teléfono'}
+            </div>
+          </div>
+          <button type="button" onclick="eliminarCliente('${c.id}')" class="text-neonPink hover:text-pink-400 p-1">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+      safeInitIcons();
+    }
+
+    function seleccionarCliente(nombre, telefono) {
+      document.getElementById('form-nombre').value = nombre;
+      document.getElementById('form-telefono').value = telefono;
+      cerrarModalClientes();
+      toast(`👤 Cliente "${nombre}" cargado en el formulario`, "green");
+    }
+
+    // --- FUNCIONALIDAD DE CONTROL DE BLOQUEO DE SEGURIDAD ---
+    function setTipoBloqueo(tipo) {
+      window.tipoBloqueoActivo = tipo;
+      
+      const btnNinguno = document.getElementById('btn-lock-ninguno');
+      const btnPin = document.getElementById('btn-lock-pin');
+      const btnPatron = document.getElementById('btn-lock-patron');
+      
+      [btnNinguno, btnPin, btnPatron].forEach(btn => {
+        if (btn) btn.className = "py-1.5 px-3 rounded-lg border border-slate-700 text-xs font-bold text-slate-300 hover:border-slate-500 transition-all";
+      });
+      
+      const activeBtn = document.getElementById(`btn-lock-${tipo}`);
+      if (activeBtn) {
+        activeBtn.className = "py-1.5 px-3 rounded-lg border-neonCyan text-neonCyan bg-neonCyan/5 text-xs font-bold transition-all shadow-md shadow-neonCyan/15";
+      }
+
+      document.getElementById('group-lock-pin').classList.toggle('hidden', tipo !== 'pin');
+      document.getElementById('group-lock-patron').classList.toggle('hidden', tipo !== 'patron');
+
+      if (tipo === 'patron') {
+        setTimeout(initPatronCanvas, 100);
+      }
+    }
+
+    function initPatronCanvas() {
+      canvasPatron = document.getElementById('canvas-patron');
+      if (!canvasPatron) return;
+      ctxPatron = canvasPatron.getContext('2d');
+
+      const rect = canvasPatron.getBoundingClientRect();
+      canvasPatron.width = rect.width;
+      canvasPatron.height = 176;
+
+      const cols = 3, rows = 3;
+      const cellW = canvasPatron.width / cols;
+      const cellH = canvasPatron.height / rows;
+      
+      nodesPatron = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          nodesPatron.push({
+            id: r * cols + c + 1,
+            x: cellW * c + cellW / 2,
+            y: cellH * r + cellH / 2,
+            radius: 12
+          });
+        }
+      }
+
+      canvasPatron.addEventListener('mousedown', startPatronDraw);
+      canvasPatron.addEventListener('mousemove', movePatronDraw);
+      canvasPatron.addEventListener('mouseup', endPatronDraw);
+
+      canvasPatron.addEventListener('touchstart', (e) => {
+        startPatronDraw(e);
+        e.preventDefault();
+      });
+      canvasPatron.addEventListener('touchmove', (e) => {
+        movePatronDraw(e);
+        e.preventDefault();
+      });
+      canvasPatron.addEventListener('touchend', (e) => {
+        endPatronDraw(e);
+        e.preventDefault();
+      });
+
+      drawPatronCanvas();
+    }
+
+    function getPointerPos(e) {
+      const rect = canvasPatron.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: (clientX - rect.left) * (canvasPatron.width / rect.width),
+        y: (clientY - rect.top) * (canvasPatron.height / rect.height)
+      };
+    }
+
+    function startPatronDraw(e) {
+      drawingPatron = true;
+      pathPatron = [];
+      document.getElementById('form-lock-patron-val').value = '';
+      document.getElementById('patron-visual-path').textContent = "Patrón: Dibujando...";
+
+      const pos = getPointerPos(e);
+      checkNodeCollision(pos.x, pos.y);
+      drawPatronCanvas(pos.x, pos.y);
+    }
+
+    // Corregido: Gestión limpia del dibujo interactivo de patrón
+    function movePatronDraw(e) {
+      if (!drawingPatron) return;
+      const pos = getPointerPos(e);
+      checkNodeCollision(pos.x, pos.y);
+      drawPatronCanvas(pos.x, pos.y);
+    }
+
+    function endPatronDraw() {
+      if (!drawingPatron) return;
+      drawingPatron = false;
+      
+      if (pathPatron.length > 0) {
+        const strPath = pathPatron.join('-');
+        document.getElementById('form-lock-patron-val').value = strPath;
+        document.getElementById('patron-visual-path').textContent = "Patrón registrado: " + pathPatron.join(' ➔ ');
+      } else {
+        document.getElementById('patron-visual-path').textContent = "Patrón: Ninguno";
+      }
+      drawPatronCanvas();
+    }
+
+    function checkNodeCollision(x, y) {
+      nodesPatron.forEach(node => {
+        const dist = Math.hypot(x - node.x, y - node.y);
+        if (dist < node.radius * 2) {
+          if (!pathPatron.includes(node.id)) {
+            pathPatron.push(node.id);
+            if (navigator.vibrate) navigator.vibrate(20);
+          }
+        }
+      });
+    }
+
+    function drawPatronCanvas(mouseX, mouseY) {
+      if (!ctxPatron || !canvasPatron) return;
+      ctxPatron.clearRect(0, 0, canvasPatron.width, canvasPatron.height);
+
+      nodesPatron.forEach(node => {
+        ctxPatron.beginPath();
+        ctxPatron.arc(node.x, node.y, node.radius * 1.5, 0, Math.PI * 2);
+        ctxPatron.fillStyle = "rgba(17, 28, 68, 0.4)";
+        ctxPatron.fill();
+
+        ctxPatron.beginPath();
+        ctxPatron.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+        ctxPatron.strokeStyle = "#1e295d";
+        ctxPatron.lineWidth = 2;
+        ctxPatron.stroke();
+
+        ctxPatron.beginPath();
+        ctxPatron.arc(node.x, node.y, 4, 0, Math.PI * 2);
+        ctxPatron.fillStyle = "#1e295d";
+        ctxPatron.fill();
+      });
+
+      if (pathPatron.length > 0) {
+        ctxPatron.beginPath();
+        ctxPatron.lineWidth = 4;
+        ctxPatron.strokeStyle = "#00f5ff";
+        ctxPatron.lineCap = 'round';
+        ctxPatron.lineJoin = 'round';
+
+        const startNode = nodesPatron[pathPatron[0] - 1];
+        ctxPatron.moveTo(startNode.x, startNode.y);
+
+        for (let i = 1; i < pathPatron.length; i++) {
+          const nextNode = nodesPatron[pathPatron[i] - 1];
+          ctxPatron.lineTo(nextNode.x, nextNode.y);
+        }
+
+        if (drawingPatron && mouseX !== undefined && mouseY !== undefined) {
+          ctxPatron.lineTo(mouseX, mouseY);
+        }
+        ctxPatron.stroke();
+
+        pathPatron.forEach(id => {
+          const node = nodesPatron[id - 1];
+          
+          ctxPatron.beginPath();
+          ctxPatron.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+          ctxPatron.fillStyle = "rgba(0, 245, 255, 0.2)";
+          ctxPatron.fill();
+          ctxPatron.strokeStyle = "#00f5ff";
+          ctxPatron.lineWidth = 2.5;
+          ctxPatron.stroke();
+
+          ctxPatron.beginPath();
+          ctxPatron.arc(node.x, node.y, 5, 0, Math.PI * 2);
+          ctxPatron.fillStyle = "#39ff14";
+          ctxPatron.fill();
+        });
+      }
+    }
+
+    function limpiarPatronCanvas() {
+      pathPatron = [];
+      if (document.getElementById('form-lock-patron-val')) {
+        document.getElementById('form-lock-patron-val').value = '';
+      }
+      if (document.getElementById('patron-visual-path')) {
+        document.getElementById('patron-visual-path').textContent = "Patrón: Ninguno";
+      }
+      drawPatronCanvas();
+    }
+
+    // --- FUNCIONES CRUD FORMULARIO ---
+    function crearNuevaOrden() {
+      document.getElementById('form-orden-trabajo').reset();
+      document.getElementById('form-edit-idx').value = '';
+      
+      // Inicializar con la fecha actual del sistema para nuevas admisiones
+      document.getElementById('form-fecha-original').value = new Date().toISOString();
+      
+      document.getElementById('chk-lente').checked = false;
+      document.getElementById('chk-mojado').checked = false;
+      document.getElementById('chk-apagado').checked = false;
+      document.getElementById('chk-pantalla').checked = false;
+      document.getElementById('chk-marco-rayado').checked = false;
+      document.getElementById('chk-marco-doblado').checked = false;
+      document.getElementById('chk-tapa').checked = false;
+      document.getElementById('chk-carga').checked = false;
+      document.getElementById('chk-sim').checked = false;
+
+      setTipoBloqueo('ninguno');
+      document.getElementById('form-lock-pin-val').value = '';
+      limpiarPatronCanvas();
+
+      let maxNum = 1000;
+      window.todasOrdenes.forEach(o => {
+        let n = parseInt(o.numero);
+        if (n > maxNum) maxNum = n;
+      });
+      document.getElementById('form-numero').value = maxNum + 1;
+      document.getElementById('modal-titulo').textContent = "Nueva Orden de Trabajo";
+      document.getElementById('form-presupuesto-tipo').value = 'monto';
+      togglePresupuestoField();
+
+      const modal = document.getElementById('modal-editar-orden');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function editarOrdenPorIndice(idx) {
+      const o = window.todasOrdenes[idx];
+      if (!o) return;
+
+      document.getElementById('form-edit-idx').value = idx;
+      
+      // Resguardar la fecha original de ingreso sin que sea sobrescrita
+      document.getElementById('form-fecha-original').value = o.fecha || new Date().toISOString();
+      
+      document.getElementById('form-numero').value = o.numero;
+      document.getElementById('form-nombre').value = o.nombre;
+      document.getElementById('form-telefono').value = o.telefono || '';
+      document.getElementById('form-dispositivo').value = o.dispositivo;
+      
+      const tBloqueo = o.tipoBloqueo || 'ninguno';
+      setTipoBloqueo(tBloqueo);
+      if (tBloqueo === 'pin') {
+        document.getElementById('form-lock-pin-val').value = o.valorBloqueo || '';
+      } else if (tBloqueo === 'patron') {
+        document.getElementById('form-lock-patron-val').value = o.valorBloqueo || '';
+        if (o.valorBloqueo) {
+          pathPatron = o.valorBloqueo.split('-').map(Number);
+          document.getElementById('patron-visual-path').textContent = "Patrón registrado: " + pathPatron.join(' ➔ ');
+        } else {
+          pathPatron = [];
+          document.getElementById('patron-visual-path').textContent = "Patrón: Ninguno";
+        }
+        setTimeout(() => {
+          if (canvasPatron) initPatronCanvas();
+        }, 150);
+      } else {
+        document.getElementById('form-lock-pin-val').value = '';
+        limpiarPatronCanvas();
+      }
+
+      const checklist = o.checklist || [];
+      document.getElementById('chk-lente').checked = checklist.includes("Lente rayado o roto");
+      document.getElementById('chk-mojado').checked = checklist.includes("Teléfono mojado");
+      document.getElementById('chk-apagado').checked = checklist.includes("Teléfono apagado");
+      document.getElementById('chk-pantalla').checked = checklist.includes("Pantalla quebrada, rota");
+      document.getElementById('chk-marco-rayado').checked = checklist.includes("Marco, quebrado o rayado");
+      document.getElementById('chk-marco-doblado').checked = checklist.includes("Marco doblado");
+      document.getElementById('chk-tapa').checked = checklist.includes("Tapa trasera, rayada o quebrada");
+      document.getElementById('chk-carga').checked = checklist.includes("Teléfono carga");
+      document.getElementById('chk-sim').checked = checklist.includes("Bandeja, SIM");
+
+      if (o.presupuesto === 'Pendiente') {
+        document.getElementById('form-presupuesto-tipo').value = 'pendiente';
+        document.getElementById('form-presupuesto').value = '';
+      } else {
+        document.getElementById('form-presupuesto-tipo').value = 'monto';
+        document.getElementById('form-presupuesto').value = o.presupuesto;
+      }
+      togglePresupuestoField();
+
+      document.getElementById('form-decision').value = o.decision;
+      document.getElementById('form-estado').value = o.estado || 'Pendiente';
+      document.getElementById('form-pago').value = o.pago;
+      document.getElementById('form-obs').value = o.obs || '';
+
+      document.getElementById('modal-titulo').textContent = `Editar Orden N° ${o.numero}`;
+      const modal = document.getElementById('modal-editar-orden');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // --- GENERACIÓN DEL CÓDIGO HÍBRIDO (LOCAL / NUBE) ---
+    // Corregido: Ahora se sincroniza correctamente todo el directorio activo de clientes en el enlace rápido
+    function actualizarCodigoCompartido() {
+      const codeElement = document.getElementById('share-sync-code');
+      if (!codeElement) return;
+
+      const linkedConfigRaw = cfg('linked_firebase_config_raw');
+      if (linkedConfigRaw) {
+        try {
+          const config = JSON.parse(linkedConfigRaw);
+          const appId = cfg('linked_app_id') || 'ayc-sistema-gestion';
+          const payload = { c: config, a: appId };
+          const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+          codeElement.value = encoded;
+          cfg('cached_sync_code', encoded);
+          return;
+        } catch(e) {
+          console.warn("Fallo procesando JSON en nube", e);
+        }
+      }
+
+      try {
+        const localBackup = {
+          local_data: true,
+          ordenes: window.todasOrdenes,
+          clientes: window.todosClientes, // Correctamente mapeado aquí
+          firmas: window.firmasClientes,
+          fotos: window.albumFotos,
+          empresa: cfg('empresa') || {}
+        };
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(localBackup))));
+        codeElement.value = encoded;
+        cfg('cached_sync_code', encoded);
+      } catch (err) {
+        console.error("Fallo empaquetando respaldo local:", err);
+        codeElement.value = "Error al generar código de respaldo";
+      }
+    }
+
+    // --- RENDERS CON FILTRO SÓLO DE DECISIÓN ADICIONADO (LIMPIO) ---
+    function renderHistorial() {
+      const searchVal = document.getElementById('inp-search').value.toLowerCase();
+      const filterEstado = document.getElementById('filter-estado').value;
+      const filterDecision = document.getElementById('filter-decision-taller').value;
+      const body = document.getElementById('tabla-ordenes-body');
+      if (!body) return;
+
+      const filtradas = window.todasOrdenes.filter(o => {
+        const matchesSearch = (o.nombre || '').toLowerCase().includes(searchVal) || 
+                              (o.dispositivo || '').toLowerCase().includes(searchVal) || 
+                              (o.numero || '').toString().includes(searchVal);
+        
+        const matchesEstado = (filterEstado === 'TODOS' || o.estado === filterEstado);
+        const matchesDecision = (filterDecision === 'TODOS' || o.decision === filterDecision);
+
+        return matchesSearch && matchesEstado && matchesDecision;
+      });
+
+      document.getElementById('row-count').textContent = `${filtradas.length} Orden${filtradas.length === 1 ? '' : 'es'}`;
+
+      if (filtradas.length === 0) {
+        body.innerHTML = `<tr><td colspan="9" class="px-6 py-10 text-center text-slate-500 font-semibold">No se encontraron órdenes registradas para esta selección</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = filtradas.map((o) => {
+        let badgeType = 'border-neonCyan/30 text-neonCyan bg-neonCyan/5';
+        let decisionLabel = 'Taller (T)';
+        if (o.decision === 'SI') { badgeType = 'border-neonGreen/30 text-neonGreen bg-neonGreen/5'; decisionLabel = 'Aprobado'; }
+        if (o.decision === 'NO') { badgeType = 'border-neonPink/30 text-neonPink bg-neonPink/5'; decisionLabel = 'Rechazado'; }
+
+        const estadoActual = o.estado || "Pendiente";
+        let statusBadgeClass = 'border-neonYellow/30 text-neonYellow bg-neonYellow/5';
+        if (estadoActual === 'Entregado') statusBadgeClass = 'border-neonGreen/30 text-neonGreen bg-neonGreen/5';
+        if (estadoActual === 'Sin solución') statusBadgeClass = 'border-neonPink/30 text-neonPink bg-neonPink/5';
+        if (estadoActual === 'Garantía') statusBadgeClass = 'border-neonPurple/30 text-neonPurple bg-neonPurple/5';
+
+        let presDisplay = o.presupuesto === "Pendiente" ? "Pendiente" : `₡${parseInt(o.presupuesto || 0).toLocaleString()}`;
+
+        return `
+          <tr class="hover:bg-slate-800/20 transition-all duration-200">
+            <td class="px-6 py-4 font-orbitron font-extrabold text-neonCyan">${o.numero}</td>
+            <td class="px-6 py-4 font-semibold text-slate-200">${o.nombre}</td>
+            <td class="px-6 py-4 text-slate-400 text-xs">${o.dispositivo}</td>
+            <td class="px-6 py-4 font-bold text-white text-xs">${presDisplay}</td>
+            <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border ${badgeType}">${decisionLabel}</span></td>
+            <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border ${statusBadgeClass}">${estadoActual}</span></td>
+            <td class="px-6 py-4 text-xs font-semibold text-slate-400">${o.pago}</td>
+            <td class="px-6 py-4 text-xs text-slate-500">${o.fecha ? new Date(o.fecha).toLocaleDateString() : '---'}</td>
+            <td class="px-6 py-4 text-right">
+              <div class="inline-flex gap-2">
+                <button class="px-2.5 py-1.5 rounded-lg border border-neonCyan/30 text-neonCyan hover:bg-neonCyan/20 transition text-xs font-bold" onclick="generarPDFOrden('${o.numero}')">PDF</button>
+                <button class="px-2.5 py-1.5 rounded-lg border border-neonGreen/30 text-neonGreen hover:bg-neonGreen/20 transition text-xs font-bold" onclick="imprimirBoletaOrden('${o.numero}')">Imprimir</button>
+                <button class="px-2.5 py-1.5 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-300 transition text-xs font-bold" onclick="editarOrdenPorIndice(${window.todasOrdenes.indexOf(o)})">Editar</button>
+                <button class="px-2.5 py-1.5 rounded-lg border border-neonPink/30 text-neonPink hover:bg-neonPink/20 transition text-xs font-bold" onclick="eliminarOrdenPorIndice(${window.todasOrdenes.indexOf(o)})">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      revisarOrdenesRetrasadas();
+      actualizarCodigoCompartido();
+      safeInitIcons();
+    }
+
+    function renderFirmas() {
+      const body = document.getElementById('tabla-firmas-body');
+      if (!body) return;
+
+      if (window.firmasClientes.length === 0) {
+        body.innerHTML = `<tr><td colspan="3" class="px-6 py-6 text-center text-slate-500 font-semibold">No se registran firmas autorizadas</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = window.firmasClientes.map(f => `
+        <tr class="hover:bg-slate-800/10 transition duration-200">
+          <td class="px-6 py-3">
+            <img src="${f.imagen}" class="h-10 bg-slate-950 border border-slate-800 rounded-lg p-1 px-4 object-contain" />
+          </td>
+          <td class="px-6 py-3">
+            <div class="font-bold text-slate-200 text-xs">Orden N° ${f.orden}</div>
+            <div class="text-[10px] text-slate-400">Firmante: ${f.nombre} (${f.fecha})</div>
+          </td>
+          <td class="px-6 py-3 text-right">
+            <button class="px-2 py-1 rounded bg-neonPink/10 text-neonPink hover:bg-neonPink hover:text-slate-950 font-bold text-[10px] transition uppercase tracking-wider" onclick="eliminarFirma('${f.id}')">Eliminar</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderGaleriaFotos() {
+      const g = document.getElementById('galeria-fotos');
+      if (!g) return;
+
+      if (window.albumFotos.length === 0) {
+        g.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs font-semibold">Sin evidencias fotográficas registradas</div>`;
+        return;
+      }
+
+      g.innerHTML = window.albumFotos.map(f => {
+        const ord = window.todasOrdenes.find(o => o.numero === f.orden);
+        const desc = ord ? `${ord.nombre} (${ord.dispositivo})` : 'Sin asignar';
+        return `
+          <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex flex-col justify-between">
+            <img src="${f.imagen}" class="w-full h-24 object-cover rounded-lg bg-black" alt="Evidencia">
+            <div class="mt-2.5 space-y-0.5 text-left">
+              <div class="text-[11px] font-bold text-neonCyan font-orbitron">Orden #${f.orden}</div>
+              <div class="text-[9px] text-slate-400 truncate">${desc}</div>
+            </div>
+            <button class="w-full mt-3 py-1 text-[9px] uppercase font-bold tracking-wider rounded bg-neonPink/10 text-neonPink hover:bg-neonPink hover:text-slate-950 transition" onclick="eliminarFoto('${f.id}')">Remover</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderFinanzas() {
+      const ctx = document.getElementById('canvas-finance-chart');
+      if (!ctx) return;
+
+      if (chartFinanciero) chartFinanciero.destroy();
+
+      const totalesMetodos = { 'Efectivo': 0, 'Transferencia': 0, 'Tarjeta': 0, 'Pendiente': 0 };
+      let totalIngreso = 0;
+      let totalAprobadas = 0;
+
+      window.todasOrdenes.forEach(o => {
+        if (o.decision === 'SI') {
+          const presVal = o.presupuesto === "Pendiente" ? 0 : (parseInt(o.presupuesto) || 0);
+          totalIngreso += presVal;
+          totalAprobadas++;
+
+          if (o.pago === 'EF') totalesMetodos['Efectivo'] += presVal;
+          else if (o.pago === 'TR') totalesMetodos['Transferencia'] += presVal;
+          else if (o.pago === 'TD') totalesMetodos['Tarjeta'] += presVal;
+          else totalesMetodos['Pendiente'] += presVal;
+        }
+      });
+
+      const promedio = totalAprobadas > 0 ? (totalIngreso / totalAprobadas) : 0;
+      document.getElementById('finance-promedio-box').innerHTML = `
+        <div class="flex justify-between py-1"><span>Total Ingresos Recaudados (SI):</span><span class="font-extrabold text-neonGreen">₡${totalIngreso.toLocaleString()}</span></div>
+        <div class="flex justify-between py-1"><span>Promedio por Orden:</span><span class="font-bold text-neonCyan">₡${parseInt(promedio).toLocaleString()}</span></div>
+      `;
+
+      chartFinanciero = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(totalesMetodos),
+          datasets: [{
+            data: Object.values(totalesMetodos),
+            backgroundColor: ['#39ff14', '#00f5ff', '#ff2d78', '#5a7a8a'],
+            borderColor: '#0b1329',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { color: '#e0eaf5', font: { family: 'Plus Jakarta Sans', size: 11 } }
+            }
+          }
+        }
+      });
+
+      renderCuentasPorPagar();
+    }
+
+    function renderCuentasPorPagar() {
+      const container = document.getElementById('ordenesXpagar');
+      if (!container) return;
+
+      const porCobrar = window.todasOrdenes.filter(o => o.decision === 'SI' && o.pago === 'PD');
+
+      if (porCobrar.length === 0) {
+        container.innerHTML = `<div class="text-slate-500 text-xs text-center py-6 font-semibold">Todas las órdenes aprobadas están al día.</div>`;
+        return;
+      }
+
+      container.innerHTML = porCobrar.map(o => {
+        const displayPres = o.presupuesto === "Pendiente" ? "Pendiente" : `₡${parseInt(o.presupuesto).toLocaleString()}`;
+        return `
+          <div class="bg-slate-950/60 border-l-4 border-neonPink p-3 rounded-lg flex justify-between items-center text-xs">
+            <div>
+              <div class="font-bold text-slate-200">#${o.numero} - ${o.nombre}</div>
+              <div class="text-[10px] text-slate-500">${o.dispositivo}</div>
+            </div>
+            <div class="text-neonPink font-extrabold">${displayPres}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function revisarOrdenesRetrasadas() {
+      const diasAlerta = parseInt(cfg('dias_alerta')) || 7;
+      const diasUrgente = parseInt(cfg('dias_urgente')) || 15;
+      const container = document.getElementById('alertas-retraso-container');
+      const box = document.getElementById('box-alertas-retraso');
+      
+      if (!container) return;
+      const hoy = new Date();
+      let htmlContent = '';
+
+      window.todasOrdenes.forEach(o => {
+        if (o.decision === 'T' && o.fecha && o.estado !== 'Entregado' && o.estado !== 'Sin solución') {
+          const diferenciaTiempo = Math.abs(hoy - new Date(o.fecha));
+          const diasTranscurridos = Math.ceil(diferenciaTiempo / (1000 * 60 * 60 * 24));
+
+          if (diasTranscurridos >= diasUrgente) {
+            htmlContent += `
+              <div class="p-3 rounded-lg bg-neonPink/10 border border-neonPink/20 text-xs text-pink-200 flex justify-between items-center">
+                <span>🚨 <strong>Urgencia Crítica:</strong> Orden N° ${o.numero} (${o.nombre}) para ${o.dispositivo} lleva <strong>${diasTranscurridos} días</strong> estancada.</span>
+                <span class="text-[10px] uppercase font-bold bg-neonPink/20 px-2 py-0.5 rounded text-neonPink">Alerta Crítica</span>
+              </div>
+            `;
+          } else if (diasTranscurridos >= diasAlerta) {
+            htmlContent += `
+              <div class="p-3 rounded-lg bg-neonYellow/10 border border-neonYellow/20 text-xs text-yellow-200 flex justify-between items-center">
+                <span>⚠️ <strong>Advertencia:</strong> Orden N° ${o.numero} (${o.nombre}) para ${o.dispositivo} lleva <strong>${diasTranscurridos} días</strong> en revisión.</span>
+                <span class="text-[10px] uppercase font-bold bg-neonYellow/20 px-2 py-0.5 rounded text-neonYellow">Preventiva</span>
+              </div>
+            `;
+          }
+        }
+      });
+
+      if (htmlContent) {
+        container.innerHTML = htmlContent;
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    function copySyncCode() {
+      const codeInput = document.getElementById('share-sync-code');
+      if (codeInput && codeInput.value) {
+        try {
+          codeInput.select();
+          codeInput.setSelectionRange(0, 99999);
+          document.execCommand('copy');
+          toast("📋 Código copiado al portapapeles. Pégalo en tu otro dispositivo.", "green");
+        } catch (err) {
+          toast("❌ Error al copiar. Inténtelo seleccionando el texto manualmente.", "pink");
+        }
+      }
+    }
+
+    function linkSyncDevice() {
+      const pasteInput = document.getElementById('paste-sync-code');
+      if (pasteInput && pasteInput.value.trim()) {
+        try {
+          const rawCode = pasteInput.value.trim();
+          
+          let decoded;
+          try {
+            decoded = decodeURIComponent(escape(atob(rawCode)));
+          } catch (err) {
+            decoded = atob(rawCode);
+          }
+          
+          const parsed = JSON.parse(decoded);
+
+          if (parsed.c && parsed.a) {
+            cfg('linked_firebase_config_raw', JSON.stringify(parsed.c));
+            cfg('linked_app_id', parsed.a);
+            
+            toast("🔌 Sincronizando nuevo canal de datos. Reiniciando...", "cyan");
+            setTimeout(() => {
+              window.location.reload();
+            }, 1200);
+          } else if (parsed.local_data) {
+            // Guardar configuración local importada garantizando la omisión de valores semilla antiguos
+            cfg('has_initial_setup_v1', true);
+            if (parsed.ordenes) {
+              window.todasOrdenes = parsed.ordenes;
+              cfg('ordenes', parsed.ordenes);
+            }
+            if (parsed.clientes) {
+              window.todosClientes = parsed.clientes;
+              cfg('clientes', parsed.clientes);
+            }
+            if (parsed.firmas) {
+              window.firmasClientes = parsed.firmas;
+              cfg('firmas', parsed.firmas);
+            }
+            if (parsed.fotos) {
+              window.albumFotos = parsed.fotos;
+              cfg('fotos', parsed.fotos);
+            }
+            if (parsed.empresa) cfg('empresa', parsed.empresa);
+            
+            toast("📊 Datos offline importados con éxito. Cargando...", "green");
+            setTimeout(() => {
+              window.location.reload();
+            }, 1200);
+          } else {
+            throw new Error("Formato incorrecto");
+          }
+        } catch (e) {
+          toast("❌ Código de sincronización inválido o corrupto.", "pink");
+        }
+      } else {
+        toast("❌ Escribe o pega un código de sincronización válido.", "pink");
+      }
+    }
+
+    function actualizarParametroTaller(key, val) {
+      cfg(key, val);
+      revisarOrdenesRetrasadas();
+      toast(`⚙️ Parámetro ${key.replace('_',' ')} actualizado.`, "cyan");
+    }
+
+    function inicCanvas() {
+      canvas = document.getElementById('canvas-firma');
+      if (!canvas) return;
+      ctxCanvas = canvas.getContext('2d');
+
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = 160;
+
+      ctxCanvas.strokeStyle = '#39ff14'; 
+      ctxCanvas.lineWidth = 3;
+      ctxCanvas.lineCap = 'round';
+
+      canvas.addEventListener('mousedown', (e) => {
+        drawing = true;
+        ctxCanvas.beginPath();
+        ctxCanvas.moveTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+      });
+      canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        ctxCanvas.lineTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+        ctxCanvas.stroke();
+      });
+      canvas.addEventListener('mouseup', () => drawing = false);
+
+      canvas.addEventListener('touchstart', (e) => {
+        drawing = true;
+        const touch = e.touches[0];
+        ctxCanvas.beginPath();
+        ctxCanvas.moveTo(touch.clientX - canvas.getBoundingClientRect().left, touch.clientY - canvas.getBoundingClientRect().top);
+        e.preventDefault();
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        if (!drawing) return;
+        const touch = e.touches[0];
+        ctxCanvas.lineTo(touch.clientX - canvas.getBoundingClientRect().left, touch.clientY - canvas.getBoundingClientRect().top);
+        ctxCanvas.stroke();
+        e.preventDefault();
+      });
+      canvas.addEventListener('touchend', () => drawing = false);
+    }
+
+    function borrarFirma() {
+      if (ctxCanvas && canvas) {
+        ctxCanvas.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function procesarArchivoImagen(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const lector = new FileReader();
+      lector.onload = function(e) {
+        fotoTemporalBase64 = e.target.result;
+        const previewImg = document.getElementById('img-recepcion-preview');
+        previewImg.src = fotoTemporalBase64;
+        previewImg.classList.remove('hidden');
+        document.getElementById('foto-vacio').style.display = 'none';
+        toast("📸 Imagen cargada con éxito en caché de taller", "green");
+      };
+      lector.readAsDataURL(file);
+    }
+
+    function enviarMensajePorWA() {
+      const previewText = document.getElementById('wa-preview').value;
+      const oNum = document.getElementById('wa-orden').value;
+      const o = window.todasOrdenes.find(item => item.numero === oNum);
+
+      if (!o || !o.telefono) {
+        toast("❌ La orden seleccionada no tiene un número telefónico asignado.", "pink");
+        return;
+      }
+
+      const telLimpio = o.telefono.replace(/\D/g, '');
+      const url = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(previewText)}`;
+      window.open(url, '_blank');
+      toast("📱 Redirigiendo a WhatsApp Web...", "green");
+    }
+
+    function exportarCSV() {
+      if (window.todasOrdenes.length === 0) {
+        toast("❌ No hay órdenes para exportar", "pink");
+        return;
+      }
+
+      let csv = "Numero,Cliente,Telefono,Dispositivo,Presupuesto,Decision,Estado,MétodoPago,FechaIngreso,Observaciones,TipoBloqueo,CredencialBloqueo\r\n";
+      window.todasOrdenes.forEach(o => {
+        csv += `"${o.numero}","${o.nombre}","${o.telefono || ''}","${o.dispositivo}","${o.presupuesto}","${o.decision}","${o.estado || 'Pendiente'}","${o.pago}","${o.fecha}","${(o.obs || '').replace(/"/g, '""')}","${o.tipoBloqueo || 'ninguno'}","${o.valorBloqueo || ''}"\r\n`;
+      });
+
+      const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `ayc_export_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast("📊 Reporte CSV descargado con éxito.", "green");
+    }
+
+    function enviarPorEmail() {
+      const emp = cfg('empresa') || { nombre: "AyC Servicios", tel: "6407-62-54" };
+      let bodyText = `Resumen Financiero del Taller - ${emp.nombre}\n`;
+      bodyText += `Fecha: ${new Date().toLocaleDateString()}\n\n`;
+
+      let total = 0;
+      window.todasOrdenes.forEach(o => {
+        if (o.decision === 'SI') {
+          const pres = o.presupuesto === 'Pendiente' ? 0 : (parseInt(o.presupuesto) || 0);
+          bodyText += `Orden N° ${o.numero} - ${o.nombre} (${o.dispositivo}): ₡${pres.toLocaleString()}\n`;
+          total += pres;
+        }
+      });
+      bodyText += `\nTotal Recaudado Estimado: ₡${total.toLocaleString()}`;
+
+      const mailto = `mailto:?subject=Resumen%20Financiero%2520AyC&body=${encodeURIComponent(bodyText)}`;
+      window.open(mailto, '_blank');
+      toast("✉️ Generando plantilla de correo...", "cyan");
+    }
+
+    function imprimirBoletaOrden(num) {
+      const o = window.todasOrdenes.find(item => item.numero === num);
+      if (!o) return;
+
+      const emp = cfg('empresa') || { nombre: "VARIEDADES AYC", nit: "RUT 12.345-678-9", dir: "Ventas y Servicio Técnico", tel: "6407-62-54" };
+
+      document.getElementById('print-header-brand-name').textContent = emp.nombre.toUpperCase();
+      document.getElementById('print-header-nit').textContent = emp.nit;
+      document.getElementById('print-header-address').textContent = emp.dir;
+      document.getElementById('print-header-phone').textContent = "Tel: " + emp.tel;
+
+      document.getElementById('print-order-num').textContent = o.numero;
+      document.getElementById('print-order-date').textContent = o.fecha ? new Date(o.fecha).toLocaleDateString() : '---';
+      
+      const limite = o.fecha ? new Date(new Date(o.fecha).getTime() + 30 * 24 * 60 * 60 * 1000) : new Date();
+      document.getElementById('print-order-deadline').textContent = limite.toLocaleDateString();
+      document.getElementById('print-order-status').textContent = o.estado || 'Pendiente';
+
+      document.getElementById('print-client-name').textContent = o.nombre;
+      document.getElementById('print-client-phone').textContent = o.telefono || 'Sin registrar';
+      document.getElementById('print-device-name').textContent = o.dispositivo;
+
+      let lockDesc = "Ninguno";
+      if (o.tipoBloqueo === 'pin') lockDesc = `PIN/Clave: ${o.valorBloqueo || ''}`;
+      else if (o.tipoBloqueo === 'patron') lockDesc = `Patrón: ${o.valorBloqueo || ''}`;
+      document.getElementById('print-device-security').textContent = lockDesc;
+
+      let printObsText = "";
+      if (o.checklist && o.checklist.length > 0) {
+        printObsText += "ESTADO FÍSICO / CHECKLIST DE INGRESO:\n" + o.checklist.map(item => `- ${item}`).join('\n') + "\n\n";
+      }
+      printObsText += "OBSERVACIONES TÉCNICAS:\n" + (o.obs || 'Sin observaciones registradas durante la recepción técnica.');
+
+      document.getElementById('print-obs-diagnostico').textContent = printObsText;
+      
+      let metPago = "Pago Pendiente (PD)";
+      if (o.pago === 'EF') metPago = "Efectivo (EF)";
+      else if (o.pago === 'TR') metPago = "Transferencia (TR)";
+      else if (o.pago === 'TD') metPago = "Tarjeta Débito/Crédito (TD)";
+      
+      document.getElementById('print-pay-method').textContent = metPago;
+      document.getElementById('print-budget-val').textContent = o.presupuesto === 'Pendiente' ? 'Pendiente' : `₡${parseInt(o.presupuesto).toLocaleString()}`;
+
+      window.print();
+    }
+
+    function generarPDFOrden(num) {
+      const o = window.todasOrdenes.find(item => item.numero === num);
+      if (!o) return;
+
+      const emp = cfg('empresa') || { nombre: "VARIEDADES AYC", nit: "RUT 12.345-678-9", dir: "Ventas y Servicio Técnico", tel: "6407-62-54" };
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4');
+
+      const colorNavy = [11, 19, 41];     
+      const colorTeal = [0, 168, 181];    
+      const colorGrayBg = [245, 247, 251]; 
+      const colorDangerBg = [254, 242, 242]; 
+      const colorDarkText = [30, 41, 59];  
+      const colorMutedText = [100, 116, 139]; 
+
+      doc.setFillColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+      doc.rect(0, 0, 8, 297, 'F');
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+      doc.text(emp.nombre.toUpperCase(), 18, 22);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(colorTeal[0], colorTeal[1], colorTeal[2]);
+      doc.text("SISTEMA DE CONTROL DE INGRESO Y DIAGNÓSTICO", 18, 27);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(colorMutedText[0], colorMutedText[1], colorMutedText[2]);
+      doc.text(`Identificación: ${emp.nit}`, 135, 17);
+      doc.text(`Ubicación: ${emp.dir}`, 135, 22);
+      doc.text(`Contacto: ${emp.tel}`, 135, 27);
+
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.5);
+      doc.line(18, 33, 198, 33);
+
+      doc.setFillColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+      doc.roundedRect(18, 38, 180, 12, 1.5, 1.5, 'F');
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`ORDEN DE SERVICIO TÉCNICO OFICIAL`, 24, 45.5);
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(0, 245, 255); 
+      doc.text(`N° ${o.numero}`, 172, 46);
+
+      let startY = 56;
+      let blockHeight = 48; 
+
+      doc.setFillColor(colorGrayBg[0], colorGrayBg[1], colorGrayBg[2]);
+      doc.roundedRect(18, startY, 87, blockHeight, 2, 2, 'F');
+      
+      doc.setFillColor(colorGrayBg[0], colorGrayBg[1], colorGrayBg[2]);
+      doc.roundedRect(111, startY, 87, blockHeight, 2, 2, 'F');
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+      doc.text("INFORMACIÓN DEL PROPIETARIO", 23, startY + 6);
+      doc.setDrawColor(203, 213, 225);
+      doc.line(23, startY + 8, 97, startY + 8);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(colorDarkText[0], colorDarkText[1], colorDarkText[2]);
+      
+      doc.text("Cliente:", 23, startY + 14);
+      doc.setFont("helvetica", "normal");
+      doc.text(o.nombre, 44, startY + 14);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Teléfono:", 23, startY + 21);
+      doc.setFont("helvetica", "normal");
+      doc.text(o.telefono || 'Sin registrar', 44, startY + 21);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Equipo:", 23, startY + 28);
+      doc.setFont("helvetica", "normal");
+      doc.text(o.dispositivo, 44, startY + 28);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Seguridad:", 23, startY + 35);
+      doc.setFont("helvetica", "normal");
+      let lockDesc = "Ninguno";
+      if (o.tipoBloqueo === 'pin') lockDesc = `PIN/Clave: ${o.valorBloqueo || ''}`;
+      else if (o.tipoBloqueo === 'patron') lockDesc = `Patrón: ${o.valorBloqueo || ''}`;
+      doc.text(lockDesc, 44, startY + 35);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Ingreso:", 23, startY + 42);
+      doc.setFont("helvetica", "normal");
+      const fechaFormat = o.fecha ? new Date(o.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---';
+      doc.text(fechaFormat, 44, startY + 42);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+      doc.text("ESTADO FINANCIERO Y TALLER", 116, startY + 6);
+      doc.line(116, startY + 8, 190, startY + 8);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(colorDarkText[0], colorDarkText[1], colorDarkText[2]);
+
+      doc.text("Presupuesto:", 116, startY + 14);
+      doc.setFont("helvetica", "bold");
+      
+      if (o.presupuesto === "Pendiente") {
+        doc.text("Pendiente de cotización", 143, startY + 14);
+      } else {
+        const numLimpio = parseInt(o.presupuesto || 0).toString().replace(/\B(?=(\d{3})+(`!\d))/g, ".");
+        const symX = 143;
+        const symY = startY + 14;
+        doc.text("C", symX, symY);
+        const wC = doc.getTextWidth("C");
+        
+        doc.setLineWidth(0.28);
+        doc.setDrawColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+        
+        const centerX = symX + wC / 2;
+        const topY = symY - 2.5;
+        const bottomY = symY + 0.4;
+        
+        doc.line(centerX - 0.4, topY, centerX - 0.2, bottomY);
+        doc.line(centerX + 0.2, topY, centerX + 0.4, bottomY);
+        
+        doc.setFont("helvetica", "bold");
+        doc.text(numLimpio, symX + wC + 1.2, symY);
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Decisión:", 116, startY + 21);
+      doc.setFont("helvetica", "normal");
+      let decText = "Pendiente en diagnóstico";
+      if (o.decision === 'SI') decText = "Aprobado para Reparar";
+      if (o.decision === 'NO') decText = "Rechazado por Cliente";
+      doc.text(decText, 143, startY + 21);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Estado actual:", 116, startY + 28);
+      doc.setFont("helvetica", "bold");
+      doc.text(o.estado || 'Pendiente', 143, startY + 28);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Método Pago:", 116, startY + 35);
+      doc.setFont("helvetica", "normal");
+      let metPago = o.pago;
+      if (o.pago === 'EF') metPago = "Efectivo (EF)";
+      else if (o.pago === 'TR') metPago = "Transferencia (TR)";
+      else if (o.pago === 'TD') metPago = "Tarjeta Débito/Crédito (TD)";
+      else if (o.pago === 'PD') metPago = "Pago Pendiente (PD)";
+      doc.text(metPago, 143, startY + 35);
+
+      startY += blockHeight + 6;
+      let checklistHeight = 22;
+      
+      doc.setFillColor(colorGrayBg[0], colorGrayBg[1], colorGrayBg[2]);
+      doc.roundedRect(18, startY, 180, checklistHeight, 2, 2, 'F');
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+      doc.text("EVALUACIÓN FÍSICA INICIAL DEL DISPOSITIVO", 23, startY + 6);
+      doc.line(23, startY + 8, 190, startY + 8);
+
+      const todosCamposFisicos = [
+        "Lente rayado o roto", "Teléfono mojado", "Teléfono apagado", 
+        "Pantalla quebrada, rota", "Marco, quebrado o rayado", "Marco doblado", 
+        "Tapa trasera, rayada o quebrada", "Teléfono carga", "Bandeja, SIM"
+      ];
+      const chkGuardados = o.checklist || [];
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      
+      let xOffset = 23;
+      let yOffset = startY + 13;
+      let itemColWidth = 56;
+      let count = 0;
+
+      todosCamposFisicos.forEach((campo) => {
+        const estaActivo = chkGuardados.includes(campo);
+        
+        doc.setDrawColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+        doc.setLineWidth(0.3);
+        doc.setFillColor(estaActivo ? colorTeal[0] : 255, estaActivo ? colorTeal[1] : 255, estaActivo ? colorTeal[2] : 255);
+        doc.rect(xOffset, yOffset - 2, 2.5, 2.5, estaActivo ? 'FD' : 'S');
+
+        if (estaActivo) {
+          doc.setDrawColor(255, 255, 255);
+          doc.setLineWidth(0.25);
+          doc.line(xOffset + 0.5, yOffset - 1, xOffset + 1.2, yOffset - 0.3);
+          doc.line(xOffset + 1.2, yOffset - 0.3, xOffset + 2, yOffset - 1.7);
+        }
+
+        doc.setTextColor(estaActivo ? colorNavy[0] : colorMutedText[0], estaActivo ? colorNavy[1] : colorMutedText[1], estaActivo ? colorNavy[2] : colorMutedText[2]);
+        doc.setFont("helvetica", estaActivo ? "bold" : "normal");
+        doc.text(campo, xOffset + 4, yOffset);
+
+        count++;
+        if (count % 3 === 0) {
+          xOffset = 23;
+          yOffset += 4.5;
+        } else {
+          xOffset += itemColWidth;
+        }
+      });
+
+      startY += checklistHeight + 6;
+      let obsHeight = 35;
+
+      doc.setFillColor(colorGrayBg[0], colorGrayBg[1], colorGrayBg[2]);
+      doc.roundedRect(18, startY, 180, obsHeight, 2, 2, 'F');
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+      doc.text("DIAGNÓSTICO TÉCNICO COMPLETO Y OBSERVACIONES DE TALLER", 23, startY + 6);
+      doc.line(23, startY + 8, 190, startY + 8);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(colorDarkText[0], colorDarkText[1], colorDarkText[2]);
+
+      const textoDiagnostico = o.obs || "No se detallan observaciones físicas o fallos complejos adicionales durante la recepción técnica de este equipo.";
+      const splitObs = doc.splitTextToSize(textoDiagnostico, 170);
+      doc.text(splitObs, 23, startY + 13);
+
+      startY += obsHeight + 6;
+      let termsHeight = 44; 
+
+      doc.setDrawColor(185, 28, 28); 
+      doc.setLineWidth(0.4);
+      doc.setFillColor(colorDangerBg[0], colorDangerBg[1], colorDangerBg[2]);
+      doc.roundedRect(18, startY, 180, termsHeight, 2, 2, 'FD');
+
+      doc.setTextColor(185, 28, 28);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.text("CLÁUSULA COMPROMISORIA Y CONDICIONES GENERALES DE RETIRO", 23, startY + 6.5);
+      
+      doc.setTextColor(127, 29, 29);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      const textoClausula = "El cliente declara estar en pleno conocimiento y de total conformidad con que dispone de un plazo límite máximo e improrrogable de 30 días calendario para retirar su equipo de las instalaciones técnicas de Variedades AyC, computado rigurosamente desde la fecha de ingreso establecida en este documento o desde la respectiva notificación formal de finalización del diagnóstico o reparación. Transcurrido el período indicado de 30 días sin que el dispositivo haya sido reclamado y retirado físicamente, este se considerará legalmente en estado de ABANDONO de forma absoluta, autorizando expresa, plena e irrevocablemente a Variedades AyC a disponer libremente del mismo para reciclaje, enajenación de componentes o destrucción total con el fin de resarcir costos de almacenamiento e inspección especializada.";
+      const splitClausula = doc.splitTextToSize(textoClausula, 170);
+      doc.text(splitClausula, 23, startY + 12);
+
+      startY += termsHeight + 14;
+
+      doc.setDrawColor(148, 163, 184);
+      doc.setLineWidth(0.4);
+      doc.line(25, startY + 15, 85, startY + 15);
+      doc.line(130, startY + 15, 190, startY + 15);
+
+      doc.setTextColor(colorNavy[0], colorNavy[1], colorNavy[2]);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.text("Firma de Autorización Técnico", 32, startY + 19);
+      doc.text("Firma de Aceptación Cliente", 138, startY + 19);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(colorMutedText[0], colorMutedText[1], colorMutedText[2]);
+      doc.text(emp.nombre, 44, startY + 23);
+      doc.text("Acepto términos y condiciones", 143, startY + 23);
+
+      const firmaCliente = window.firmasClientes.find(f => f.orden === o.numero);
+      if (firmaCliente) {
+        try {
+          doc.addImage(firmaCliente.imagen, 'PNG', 135, startY - 5, 45, 18);
+        } catch(err) {
+          console.warn("No se pudo cargar la firma en el PDF:", err);
+        }
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(colorMutedText[0], colorMutedText[1], colorMutedText[2]);
+      doc.text("Documento generado electrónicamente en Variedades AyC - Taller Autorizado © 2026", 18, 285);
+      doc.text("Copia del Cliente - Validez de Diagnóstico por 15 días.", 138, 285);
+
+      doc.save(`Orden_${o.numero}_AyC.pdf`);
+      toast(`📄 PDF de Orden N° ${o.numero} generado con éxito`, "green");
+    }
+
+    // UTILERÍAS DE NOTIFICACIÓN
+    function toast(mensaje, tipo = 'cyan') {
+      const t = document.getElementById('toast-msg');
+      const text = document.getElementById('toast-text');
+      const icon = document.getElementById('toast-icon');
+      if (!t || !text) return;
+
+      let color = 'border-neonCyan text-neonCyan';
+      let iconHTML = '<i data-lucide="info" class="w-5 h-5"></i>';
+      if (tipo === 'green') {
+        color = 'border-neonGreen text-neonGreen';
+        iconHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i>';
+      }
+      if (tipo === 'pink' || tipo === 'red') {
+        color = 'border-neonPink text-neonPink';
+        iconHTML = '<i data-lucide="x-circle" class="w-5 h-5"></i>';
+      }
+
+      t.className = `fixed bottom-6 right-6 z-[12000] transition-all duration-300 flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border backdrop-blur-md bg-slate-900/95 ${color}`;
+      text.textContent = mensaje;
+      icon.innerHTML = iconHTML;
+
+      safeInitIcons();
+      t.classList.remove('opacity-0', 'translate-y-12');
+      t.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        t.classList.remove('opacity-100', 'translate-y-0');
+        t.classList.add('opacity-0', 'translate-y-12');
+      }, 3500);
+    }
+
+    function safeInitIcons() {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    }
+
+    function showFallbackLogo(img) {
+      if (!img) return;
+      img.onerror = null;
+      img.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 500' style='background:%23050811; font-family:\"Plus Jakarta Sans\", sans-serif;'><rect width='500' height='500' fill='%23050811'/><circle cx='250' cy='250' r='185' fill='none' stroke='%2300f5ff' stroke-width='6'/><text x='50%' y='178' text-anchor='middle' font-family='\"Orbitron\"' font-size='22' font-weight='900' fill='%2300f5ff' letter-spacing='3'>VARIEDADES</text><text x='50%' y='238' text-anchor='middle' font-size='68' font-weight='900' fill='%23ff2d78' font-style='italic'>AyC</text></svg>";
+    }
+
+    function cargarSelectsMultimedia() {
+      const selectF = document.getElementById('foto-orden');
+      const selectW = document.getElementById('wa-orden');
+      const selectS = document.getElementById('sign-orden-select');
+
+      const opcionesHTML = window.todasOrdenes.map(o => `
+        <option value="${o.numero}">Orden N° ${o.numero} - ${o.nombre}</option>
+      `).join('');
+
+      if (selectF) selectF.innerHTML = opcionesHTML;
+      if (selectW) { selectW.innerHTML = opcionesHTML; generarMensajeNotif(); }
+      if (selectS) selectS.innerHTML = opcionesHTML;
+    }
+
+    function generarMensajeNotif() {
+      const oNum = document.getElementById('wa-orden').value;
+      const plantilla = document.getElementById('wa-plantilla').value;
+      const preview = document.getElementById('wa-preview');
+
+      const o = window.todasOrdenes.find(item => item.numero === oNum);
+      if (!o || !preview) return;
+
+      const emp = cfg('empresa') || { nombre: "AyC Servicios", tel: "6407-62-54" };
+      let txt = '';
+
+      if (plantilla === 'ingreso') {
+        txt = `Estimado(a) ${o.nombre},\n\nConfirmamos el ingreso a taller de su dispositivo ${o.dispositivo} bajo la Orden de Trabajo N° ${o.numero}.\n\nEstaremos realizando las pruebas pertinentes y le notificaremos a la brevedad.\n\nAtte. ${emp.nombre}`;
+      } else if (plantilla === 'reparado') {
+        txt = `Hola ${o.nombre},\n\n¡Le informamos que su dispositivo ${o.dispositivo} (Orden N° ${o.numero}) ha sido reparado con éxito!\n\nSu equipo se encuentra listo para entrega inmediata en taller.\n\nCosto: ${o.presupuesto === 'Pendiente' ? 'Pendiente de cotización' : '₡' + parseInt(o.presupuesto).toLocaleString()}.\n\nAtte. ${emp.nombre}`;
+      } else if (plantilla === 'presupuesto') {
+        txt = `Estimado(a) ${o.nombre},\n\nYa contamos con el presupuesto técnico para su dispositivo ${o.dispositivo} (Orden N° ${o.numero}).\n\nEl costo aproximado de la reparación es de: ${o.presupuesto === 'Pendiente' ? 'Pendiente de cotización' : '₡' + parseInt(o.presupuesto).toLocaleString()}.\n\nQuedamos atentos a su confirmación.\n\nAtte. ${emp.nombre}`;
+      } else if (plantilla === 'sinreparacion') {
+        txt = `Estimado(a) ${o.nombre},\n\nLe notificamos que tras las pruebas técnicas correspondientes, lamentablemente su equipo ${o.dispositivo} (Orden N° ${o.numero}) no tiene reparación viable.\n\nSe encuentra disponible para su retiro. Recuerde la cláusula de retiro máximo de 30 días.\n\nAtte. ${emp.nombre}`;
+      }
+
+      preview.value = txt;
+    }
+
+    // MAPEOS GLOBALES CORRECTAMENTE EXPUESTOS
+    window.actualizarCodigoCompartido = actualizarCodigoCompartido;
+    window.copySyncCode = copySyncCode;
+    window.linkSyncDevice = linkSyncDevice;
+    window.crearNuevaOrden = crearNuevaOrden;
+    window.editarOrdenPorIndice = editarOrdenPorIndice;
+    window.changeTab = changeTab;
+    window.procesarLogin = procesarLogin;
+    window.checkLoginKey = checkLoginKey;
+    window.borrarFirma = borrarFirma;
+    window.procesarArchivoImagen = procesarArchivoImagen;
+    window.enviarMensajePorWA = enviarMensajePorWA;
+    window.exportarCSV = exportarCSV;
+    window.enviarPorEmail = enviarPorEmail;
+    window.imprimirBoletaOrden = imprimirBoletaOrden;
+    window.generarPDFOrden = generarPDFOrden;
+    window.actualizarParametroTaller = actualizarParametroTaller;
+    window.closeConfirm = closeConfirm;
+    window.cerrarModalOrden = cerrarModalOrden;
+    window.togglePresupuestoField = togglePresupuestoField;
+    window.renderHistorial = renderHistorial;
+    window.generarMensajeNotif = generarMensajeNotif;
+
+    // Métodos de clientes
+    window.abrirModalClientes = abrirModalClientes;
+    window.cerrarModalClientes = cerrarModalClientes;
+    window.renderListaClientes = renderListaClientes;
+    window.seleccionarCliente = seleccionarCliente;
+
+    // Métodos de bloqueo expuestos
+    window.setTipoBloqueo = setTipoBloqueo;
+    window.limpiarPatronCanvas = limpiarPatronCanvas;
+  </script>
+
+  <!-- SCRIPT 2: CONEXIÓN EN TIEMPO REAL CON LA NUBE (FIREBASE CON ENLACE) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    let db = null;
+    let auth = null;
+    let appId = 'ayc-sistema-gestion';
+
+    const driveDot = document.getElementById('drive-dot');
+    const drivePing = document.getElementById('drive-ping');
+    const driveText = document.getElementById('drive-text');
+
+    const initFirebase = async () => {
+      try {
+        let config = null;
+
+        const linkedConfigRaw = cfg('linked_firebase_config_raw');
+        if (linkedConfigRaw) {
+          config = JSON.parse(linkedConfigRaw);
+          appId = cfg('linked_app_id') || 'ayc-sistema-gestion';
+        }
+
+        if (!config && typeof __firebase_config !== 'undefined' && __firebase_config) {
+          config = JSON.parse(__firebase_config);
+          appId = typeof __app_id !== 'undefined' ? __app_id : 'ayc-sistema-gestion';
+        }
+
+        if (config) {
+          try {
+            const payload = { c: config, a: appId };
+            const encodedPayload = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+            
+            cfg('cached_sync_code', encodedPayload);
+            
+            const actualizarInputVisual = () => {
+              const codeElement = document.getElementById('share-sync-code');
+              if (codeElement) {
+                codeElement.value = encodedPayload;
+              }
+            };
+            
+            actualizarInputVisual();
+            setTimeout(actualizarInputVisual, 200);
+            setTimeout(actualizarInputVisual, 1000);
+          } catch(err) {
+            console.error("Fallo al empaquetar código de sincronización:", err);
+          }
+        } else {
+          if (typeof window.actualizarCodigoCompartido === 'function') {
+            window.actualizarCodigoCompartido();
+          }
+        }
+
+        if (config) {
+          const app = initializeApp(config);
+          auth = getAuth(app);
+          db = getFirestore(app);
+
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              window.isCloudActive = true;
+              actualizarUIDrive(true);
+              conectarBaseDatosNube();
+            } else {
+              window.isCloudActive = false;
+              actualizarUIDrive(false);
+            }
+          });
+        } else {
+          window.isCloudActive = false;
+          actualizarUIDrive(false);
+        }
+      } catch (e) {
+        console.warn("Nube inactiva. Almacenamiento local de resguardo activado.", e);
+        window.isCloudActive = false;
+        actualizarUIDrive(false);
+      }
+    };
+
+    function conectarBaseDatosNube() {
+      if (!db) return;
+
+      const qOrdenes = collection(db, 'artifacts', appId, 'public', 'data', 'ordenes');
+      onSnapshot(qOrdenes, (snapshot) => {
+        let tempOrdenes = [];
+        snapshot.forEach((doc) => {
+          tempOrdenes.push({ firestoreId: doc.id, ...doc.data() });
+        });
+        if (tempOrdenes.length > 0) {
+          window.todasOrdenes = tempOrdenes;
+          window.todasOrdenes.sort((a, b) => parseInt(b.numero) - parseInt(a.numero));
+          cfg('ordenes', window.todasOrdenes);
+          renderHistorial();
+          actualizarPanelesActivos();
+        }
+      }, (e) => console.error(e));
+
+      const qClientes = collection(db, 'artifacts', appId, 'public', 'data', 'clientes');
+      onSnapshot(qClientes, (snapshot) => {
+        let tempClientes = [];
+        snapshot.forEach((doc) => {
+          tempClientes.push({ id: doc.id, ...doc.data() });
+        });
+        window.todosClientes = tempClientes;
+        cfg('clientes', window.todosClientes);
+        if (document.getElementById('modal-clientes') && !document.getElementById('modal-clientes').classList.contains('hidden')) {
+          renderListaClientes();
+        }
+      }, (e) => console.error("Error al cargar clientes en tiempo real:", e));
+
+      const qFirmas = collection(db, 'artifacts', appId, 'public', 'data', 'firmas');
+      onSnapshot(qFirmas, (snapshot) => {
+        let tempFirmas = [];
+        snapshot.forEach((doc) => {
+          tempFirmas.push({ id: doc.id, ...doc.data() });
+        });
+        window.firmasClientes = tempFirmas;
+        cfg('firmas', window.firmasClientes);
+        renderFirmas();
+      });
+
+      const qFotos = collection(db, 'artifacts', appId, 'public', 'data', 'fotos');
+      onSnapshot(qFotos, (snapshot) => {
+        let tempFotos = [];
+        snapshot.forEach((doc) => {
+          tempFotos.push({ id: doc.id, ...doc.data() });
+        });
+        window.albumFotos = tempFotos;
+        cfg('fotos', window.albumFotos);
+        renderGaleriaFotos();
+      });
+
+      const docEmpresa = doc(db, 'artifacts', appId, 'public', 'data', 'empresa', 'perfil');
+      onSnapshot(docEmpresa, (snapshot) => {
+        if (snapshot.exists()) {
+          const emp = snapshot.data();
+          document.getElementById('emp-nombre').value = emp.nombre || '';
+          document.getElementById('emp-dir').value = emp.dir || '';
+          document.getElementById('emp-tel').value = emp.tel || '';
+          document.getElementById('emp-nit').value = emp.nit || '';
+          cfg('empresa', emp);
+        }
+      });
+    }
+
+    function actualizarPanelesActivos() {
+      const activeTabButton = document.querySelector('.tab-btn.text-neonCyan');
+      if (activeTabButton) {
+        const btnText = activeTabButton.textContent.toLowerCase();
+        if (btnText.includes('finanzas')) renderFinanzas();
+        if (btnText.includes('multimedia')) cargarSelectsMultimedia();
+        if (btnText.includes('firma')) renderFirmas();
+      }
+    }
+
+    async function procesarFormularioOrden(event) {
+      event.preventDefault();
+      const idx = document.getElementById('form-edit-idx').value;
+      const tipoPresupuesto = document.getElementById('form-presupuesto-tipo').value;
+      const numOrden = document.getElementById('form-numero').value;
+
+      // Obtener la fecha original de ingreso guardada en el campo oculto
+      const originalFecha = document.getElementById('form-fecha-original').value || new Date().toISOString();
+
+      const checklist = [];
+      if (document.getElementById('chk-lente').checked) checklist.push("Lente rayado o roto");
+      if (document.getElementById('chk-mojado').checked) checklist.push("Teléfono mojado");
+      if (document.getElementById('chk-apagado').checked) checklist.push("Teléfono apagado");
+      if (document.getElementById('chk-pantalla').checked) checklist.push("Pantalla quebrada, rota");
+      if (document.getElementById('chk-marco-rayado').checked) checklist.push("Marco, quebrado o rayado");
+      if (document.getElementById('chk-marco-doblado').checked) checklist.push("Marco doblado");
+      if (document.getElementById('chk-tapa').checked) checklist.push("Tapa trasera, rayada o quebrada");
+      if (document.getElementById('chk-carga').checked) checklist.push("Teléfono carga");
+      if (document.getElementById('chk-sim').checked) checklist.push("Bandeja, SIM");
+
+      const lockType = window.tipoBloqueoActivo || 'ninguno';
+      const lockValue = lockType === 'pin' 
+        ? document.getElementById('form-lock-pin-val').value.trim() 
+        : (lockType === 'patron' ? document.getElementById('form-lock-patron-val').value : '');
+
+      const ordData = {
+        numero: numOrden,
+        nombre: document.getElementById('form-nombre').value.trim(),
+        telefono: document.getElementById('form-telefono').value.trim(),
+        dispositivo: document.getElementById('form-dispositivo').value.trim(),
+        presupuesto: tipoPresupuesto === 'pendiente' ? 'Pendiente' : (parseInt(document.getElementById('form-presupuesto').value) || 0),
+        decision: document.getElementById('form-decision').value,
+        pago: document.getElementById('form-pago').value,
+        estado: document.getElementById('form-estado').value,
+        obs: document.getElementById('form-obs').value.trim(),
+        checklist: checklist,
+        tipoBloqueo: lockType,
+        valorBloqueo: lockValue,
+        fecha: originalFecha // Usar siempre la fecha original inmutable
+      };
+
+      if (window.isCloudActive && db) {
+        try {
+          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'ordenes', numOrden);
+          await setDoc(docRef, ordData);
+          toast(`✅ Orden N° ${numOrden} guardada y sincronizada`, "green");
+          cerrarModalOrden();
+        } catch (e) {
+          toast("⚠️ Fallo temporal en red. Salvando localmente.", "pink");
+          guardarLocalmente(idx, ordData);
+        }
+      } else {
+        guardarLocalmente(idx, ordData);
+      }
+    }
+
+    function guardarLocalmente(idx, ordData) {
+      if (idx === '') {
+        window.todasOrdenes.push(ordData);
+      } else {
+        window.todasOrdenes[idx] = ordData;
+      }
+      window.todasOrdenes.sort((a, b) => parseInt(b.numero) - parseInt(a.numero));
+      cfg('ordenes', window.todasOrdenes);
+      toast(`✅ Orden guardada de forma local`, "green");
+      cerrarModalOrden();
+      renderHistorial();
+    }
+
+    async function eliminarOrdenPorIndice(idx) {
+      const o = window.todasOrdenes[idx];
+      if (!o) return;
+
+      customConfirm(`¿Deseas eliminar la Orden N° ${o.numero}?`, async () => {
+        if (window.isCloudActive && db) {
+          try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ordenes', o.numero));
+            toast("Orden eliminada de todos los dispositivos", "pink");
+          } catch (e) {
+            toast("❌ Error en nube. Removiendo localmente.", "pink");
+            eliminarLocal(idx);
+          }
+        } else {
+          eliminarLocal(idx);
+        }
+      });
+    }
+
+    function eliminarLocal(idx) {
+      window.todasOrdenes.splice(idx, 1);
+      cfg('ordenes', window.todasOrdenes);
+      renderHistorial();
+      toast("Orden removida localmente", "pink");
+    }
+
+    async function guardarNuevoCliente() {
+      const nombre = document.getElementById('new-cli-nombre').value.trim();
+      const telefono = document.getElementById('new-cli-telefono').value.trim();
+
+      if (!nombre) {
+        toast("❌ Ingrese el nombre del cliente", "pink");
+        return;
+      }
+
+      const idCliente = 'cli-' + Date.now();
+      const clienteData = { nombre, telefono, fecha: new Date().toISOString() };
+
+      if (window.isCloudActive && db) {
+        try {
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'clientes', idCliente), clienteData);
+          toast("✅ Cliente registrado en la nube con éxito", "green");
+        } catch (e) {
+          toast("❌ Error al guardar cliente en red", "pink");
+        }
+      } else {
+        window.todosClientes.push({ id: idCliente, ...clienteData });
+        cfg('clientes', window.todosClientes);
+        toast("✅ Cliente guardado de forma local", "green");
+        renderListaClientes();
+        // Corregido: Regenerar el código QR/Sincronización activo localmente al instante
+        window.actualizarCodigoCompartido();
+      }
+
+      document.getElementById('new-cli-nombre').value = '';
+      document.getElementById('new-cli-telefono').value = '';
+    }
+
+    async function eliminarCliente(id) {
+      customConfirm("¿Deseas eliminar este cliente del directorio?", async () => {
+        if (window.isCloudActive && db) {
+          try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'clientes', id));
+            toast("Cliente eliminado del servidor", "pink");
+          } catch (e) {
+            toast("❌ Error al eliminar cliente de la red", "pink");
+          }
+        } else {
+          window.todosClientes = window.todosClientes.filter(c => c.id !== id);
+          cfg('clientes', window.todosClientes);
+          renderListaClientes();
+          toast("Cliente removido localmente", "pink");
+          // Corregido: Forzar actualización del string sincronizado localmente al instante
+          window.actualizarCodigoCompartido();
+        }
+      });
+    }
+
+    async function guardarFirmaCliente() {
+      const selectOrd = document.getElementById('sign-orden-select');
+      const fontSign = document.getElementById('sign-client-name').value.trim();
+
+      if (!selectOrd || !selectOrd.value) {
+        toast("❌ Registre una orden primero para poder firmar", "pink");
+        return;
+      }
+      if (!fontSign) {
+        toast("❌ Ingrese el nombre del firmante", "pink");
+        return;
+      }
+
+      const imgFirma64 = canvas.toDataURL();
+      if (imgFirma64.length < 2500) {
+        toast("❌ Dibuje su firma en el recuadro para registrar", "pink");
+        return;
+      }
+
+      const idFirma = 'f-' + Date.now();
+      const firmaData = {
+        orden: selectOrd.value,
+        nombre: fontSign,
+        imagen: imgFirma64,
+        fecha: new Date().toLocaleDateString()
+      };
+
+      if (window.isCloudActive && db) {
+        try {
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'firmas', idFirma), firmaData);
+          toast("✅ Firma sincronizada en red", "green");
+          borrarFirma();
+          document.getElementById('sign-client-name').value = '';
+        } catch (e) {
+          toast("❌ Error en red al subir firma.", "pink");
+        }
+      } else {
+        window.firmasClientes.push({ id: idFirma, ...firmaData });
+        cfg('firmas', window.firmasClientes);
+        toast("✅ Firma guardada localmente", "green");
+        borrarFirma();
+        document.getElementById('sign-client-name').value = '';
+        renderFirmas();
+      }
+    }
+
+    async function eliminarFirma(id) {
+      customConfirm("¿Deseas eliminar esta firma?", async () => {
+        if (window.isCloudActive && db) {
+          try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'firmas', id));
+            toast("Firma removida del servidor", "pink");
+          } catch (e) {
+            toast("Fallo de red", "pink");
+          }
+        } else {
+          window.firmasClientes = window.firmasClientes.filter(f => f.id !== id);
+          cfg('firmas', window.firmasClientes);
+          renderFirmas();
+          toast("Firma removida localmente", "pink");
+        }
+      });
+    }
+
+    async function guardarFotoEvidencia() {
+      const ordenNum = document.getElementById('foto-orden').value;
+      if (!fotoTemporalBase64) {
+        toast("❌ Primero cargue una imagen o evidencia", "pink");
+        return;
+      }
+
+      const idFoto = 'img-' + Date.now();
+      const fotoData = {
+        orden: ordenNum,
+        imagen: fotoTemporalBase64,
+        fecha: new Date().toLocaleDateString()
+      };
+
+      if (window.isCloudActive && db) {
+        try {
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fotos', idFoto), fotoData);
+          toast(`✅ Foto sincronizada para Orden N° ${ordenNum}`, "green");
+          fotoTemporalBase64 = null;
+          document.getElementById('img-recepcion-preview').classList.add('hidden');
+          document.getElementById('foto-vacio').style.display = 'block';
+        } catch (e) {
+          toast("❌ Error al subir imagen a la nube", "pink");
+        }
+      } else {
+        window.albumFotos.push({ id: idFoto, ...fotoData });
+        cfg('fotos', window.albumFotos);
+        toast("✅ Imagen guardada localmente", "green");
+        fotoTemporalBase64 = null;
+        document.getElementById('img-recepcion-preview').classList.add('hidden');
+        document.getElementById('foto-vacio').style.display = 'block';
+        renderGaleriaFotos();
+      }
+    }
+
+    async function eliminarFoto(id) {
+      customConfirm("¿Deseas eliminar esta evidencia?", async () => {
+        if (window.isCloudActive && db) {
+          try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fotos', id));
+            toast("Evidencia removida de la nube", "pink");
+          } catch (e) {
+            toast("Fallo al remover imagen", "pink");
+          }
+        } else {
+          window.albumFotos = window.albumFotos.filter(f => f.id !== id);
+          cfg('fotos', window.albumFotos);
+          renderGaleriaFotos();
+          toast("Evidencia removida localmente", "pink");
+        }
+      });
+    }
+
+    async function guardarEmpresa() {
+      const empData = {
+        nombre: document.getElementById('emp-nombre').value.trim() || "VARIEDADES AYC",
+        dir: document.getElementById('emp-dir').value.trim() || "Ventas y Servicio Técnico",
+        tel: document.getElementById('emp-tel').value.trim() || "6407-62-54",
+        nit: document.getElementById('emp-nit').value.trim() || "RUT 12.345-678-9"
+      };
+
+      if (window.isCloudActive && db) {
+        try {
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'empresa', 'perfil'), empData);
+          toast("✅ Configuración del taller actualizada en red", "green");
+        } catch (e) {
+          toast("❌ Error sincronizando perfil", "pink");
+        }
+      } else {
+        cfg('empresa', empData);
+        toast("✅ Configuración guardada de forma local", "green");
+        window.actualizarCodigoCompartido();
+      }
+    }
+
+    async function confirmarRestablecimiento() {
+      customConfirm("🚨 ADVERTENCIA CRÍTICA: Se vaciará por completo la base de datos sincronizada. ¿Continuar?", async () => {
+        if (window.isCloudActive && db) {
+          try {
+            for (let o of window.todasOrdenes) {
+              await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ordenes', o.numero));
+            }
+            for (let c of window.todosClientes) {
+              await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'clientes', c.id));
+            }
+            for (let f of window.firmasClientes) {
+              await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'firmas', f.id));
+            }
+            for (let img of window.albumFotos) {
+              await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fotos', img.id));
+            }
+            toast("Servidor de la Nube vaciado con éxito", "green");
+          } catch (e) {
+            toast("Error vaciando registros", "red");
+          }
+        } else {
+          localStorage.clear();
+          window.todasOrdenes = [];
+          window.todosClientes = [];
+          window.firmasClientes = [];
+          window.albumFotos = [];
+          // Marcar setup inicial activo para evitar repoblación accidental de clientes de prueba
+          cfg('has_initial_setup_v1', true);
+          renderHistorial();
+          toast("Almacenamiento local limpiado", "pink");
+        }
+      });
+    }
+
+    function reforzarSincronia() {
+      toast("🔄 Sincronizando datos con la Nube...", "cyan");
+      initFirebase();
+    }
+
+    function actualizarUIDrive(conectado) {
+      if (conectado) {
+        driveDot.className = "relative inline-flex rounded-full h-2 w-2 bg-neonGreen glow-green";
+        drivePing.className = "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-neonGreen";
+        driveText.textContent = "Sincronizado con la Nube 🟢";
+        driveText.className = "text-xs font-semibold tracking-wider text-neonGreen animate-pulse";
+      } else {
+        driveDot.className = "relative inline-flex rounded-full h-2 w-2 bg-slate-500";
+        drivePing.className = "hidden";
+        driveText.textContent = "Sin Conexión (Modo Local) 🛑";
+        driveText.className = "text-xs font-semibold tracking-wider text-slate-500";
+      }
+    }
+
+    window.procesarFormularioOrden = procesarFormularioOrden;
+    window.eliminarOrdenPorIndice = eliminarOrdenPorIndice;
+    window.guardarFirmaCliente = guardarFirmaCliente;
+    window.eliminarFirma = eliminarFirma;
+    window.guardarFotoEvidencia = guardarFotoEvidencia;
+    window.eliminarFoto = eliminarFoto;
+    window.guardarEmpresa = guardarEmpresa;
+    window.reforzarSincronia = reforzarSincronia;
+    window.confirmarRestablecimiento = confirmarRestablecimiento;
+
+    window.guardarNuevoCliente = guardarNuevoCliente;
+    window.eliminarCliente = eliminarCliente;
+
+    initFirebase();
+  </script>
+</body>
+</html>
